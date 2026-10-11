@@ -1,0 +1,2749 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HRcast — Coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/metrics.js"></script>
+  <style>
+    :root {
+      --bg: #eef0f4;
+      --surface: #ffffff;
+      --surface-2: #f7f8fa;
+      --text: #14181f;
+      --muted: #6b7280;
+      --accent: #e85d04;
+      --accent-dark: #c2410c;
+      --ink: #0f1419;
+      --warn: #b45309;
+      --zone-green: #16a34a;
+      --zone-blue: #0284c7;
+      --zone-orange: #ea580c;
+      --zone-red: #dc2626;
+      --border: rgba(15, 20, 25, 0.08);
+      --shadow: 0 4px 24px rgba(15, 20, 25, 0.06);
+      --shadow-sm: 0 2px 8px rgba(15, 20, 25, 0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      min-height: 100vh;
+      font-family: "DM Sans", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse 80% 50% at 100% 0%, rgba(232, 93, 4, 0.07), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 0% 100%, rgba(2, 132, 199, 0.06), transparent 45%),
+        var(--bg);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Hit zone: mouse vicino al bordo superiore → mostra header */
+    .chrome-edge {
+      position: fixed;
+      left: 0;
+      right: 0;
+      z-index: 48;
+      pointer-events: auto;
+    }
+    .chrome-edge-top { top: 0; height: 16px; }
+    .chrome-edge-bottom { bottom: 0; height: 16px; }
+    body.chrome-top-open .chrome-edge-top,
+    body.chrome-bottom-open .chrome-edge-bottom {
+      pointer-events: none;
+    }
+
+    .top {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      flex-wrap: wrap;
+      padding: 0.55rem 1.25rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(15, 20, 25, 0.08);
+      transform: translateY(calc(-100% + 5px));
+      transition: transform 0.22s ease;
+    }
+    .top:hover,
+    .top:focus-within,
+    body.chrome-top-open .top {
+      transform: translateY(0);
+    }
+    .brand-wrap { display: flex; align-items: baseline; gap: 0.65rem; min-width: 0; }
+    .brand {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(1.55rem, 3.2vw, 1.9rem);
+      letter-spacing: 0.06em;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .brand span { color: var(--accent); }
+    .brand-sub {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+    .nav-tab {
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.45rem 0.85rem;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--surface-2);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-tab:hover { background: #eef1f5; }
+    .nav-tab.active {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+    .nav-tab .nav-dot {
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      background: var(--zone-green);
+      box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45);
+      animation: pulse-dot 1.1s ease-in-out infinite;
+    }
+    .nav-tab:not(.active) .nav-dot { opacity: 0.55; animation: none; }
+
+    .join-box {
+      display: flex;
+      gap: 0.55rem;
+      align-items: center;
+      min-width: 0;
+      max-width: 280px;
+    }
+    .join-box strong { color: var(--zone-blue); font-weight: 700; }
+    .join-meta { font-size: 0.68rem; color: var(--muted); line-height: 1.35; min-width: 0; }
+    .join-url {
+      display: block;
+      margin-top: 0.1rem;
+      word-break: break-all;
+      color: var(--text);
+      font-size: 0.62rem;
+      text-decoration: none;
+      font-weight: 500;
+      max-height: 2.4em;
+      overflow: hidden;
+    }
+    .join-url:hover { color: var(--accent); }
+    .ip-pick { margin-top: 0.2rem; font-size: 0.62rem; color: var(--muted); }
+    .ip-pick select {
+      margin-top: 0.1rem;
+      width: 100%;
+      max-width: 140px;
+      padding: 0.2rem 0.35rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.62rem;
+    }
+    .qr-hint {
+      margin-top: 0.15rem;
+      font-size: 0.6rem;
+      color: var(--warn);
+      line-height: 1.3;
+      font-weight: 500;
+    }
+    #qr {
+      width: 56px;
+      height: 56px;
+      background: #fff;
+      border-radius: 8px;
+      flex-shrink: 0;
+      object-fit: contain;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+    }
+    #qr:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .workout-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 0.65rem;
+      min-width: 0;
+    }
+    .workout-bar.recording .workout-actions button.primary {
+      background: var(--zone-red);
+      border-color: var(--zone-red);
+      animation: pulse-dot 1.1s ease-in-out infinite;
+    }
+    .workout-status {
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.3;
+      max-width: 220px;
+      font-weight: 500;
+    }
+    .workout-status strong { color: var(--text); }
+    .workout-status .rec {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--zone-red);
+      font-weight: 700;
+    }
+    .workout-status .dot {
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: var(--zone-red);
+      animation: pulse-dot 1.1s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.92); }
+    }
+    .workout-actions { display: flex; gap: 0.35rem; flex-shrink: 0; align-items: center; }
+    .workout-title-input {
+      width: 9.5rem;
+      max-width: 28vw;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.45rem 0.75rem;
+      background: var(--surface);
+      color: var(--ink);
+      min-width: 0;
+    }
+    .workout-title-input::placeholder { color: var(--muted); font-weight: 500; }
+    .workout-title-input:focus {
+      outline: none;
+      border-color: rgba(232, 93, 4, 0.45);
+      box-shadow: 0 0 0 2px rgba(232, 93, 4, 0.12);
+    }
+    .workout-bar.recording .workout-title-input { display: none; }
+    .workout-bar.summary-open .workout-title-input { display: none; }
+    .workout-bar.summary-open #btnStartWorkout { display: none; }
+    .summary-train-bar {
+      position: relative;
+      z-index: 20;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+      flex-wrap: wrap;
+      padding: 0.55rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      background:
+        linear-gradient(90deg, rgba(232, 93, 4, 0.08), transparent 55%),
+        var(--surface);
+    }
+    .summary-train-bar.hidden { display: none; }
+    .summary-train-bar .st-copy {
+      min-width: 0;
+      flex: 1;
+    }
+    .summary-train-bar .st-label {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-dark);
+    }
+    .summary-train-bar .st-title {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      color: var(--ink);
+      margin-top: 0.1rem;
+    }
+    .summary-train-bar .st-hint {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+    .summary-train-bar .train-compare {
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.78rem;
+      border: none;
+      border-radius: 999px;
+      padding: 0.55rem 1.05rem;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      border: 1px solid var(--accent);
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+    .summary-train-bar .train-compare:hover:not(:disabled) {
+      filter: brightness(1.06);
+    }
+    .summary-train-bar .train-compare:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .workout-actions button.train-compare {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .workout-actions button.train-compare:hover:not(:disabled) {
+      filter: brightness(1.06);
+      background: var(--accent);
+    }
+    .workout-actions button.train-compare.hidden { display: none; }
+    .workout-actions button {
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.72rem;
+      border: none;
+      border-radius: 999px;
+      padding: 0.5rem 0.9rem;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .workout-actions button:hover:not(:disabled) { background: var(--surface-2); }
+    .workout-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .workout-actions button.primary {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+    .workout-actions button.primary:hover:not(:disabled) { background: #252b33; }
+    .workout-actions button.danger {
+      background: transparent;
+      border: 1px solid rgba(220, 38, 38, 0.35);
+      color: var(--zone-red);
+      box-shadow: none;
+    }
+    .workout-actions button.ghost {
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      box-shadow: none;
+    }
+    .workout-error {
+      flex: 1 1 100%;
+      font-size: 0.65rem;
+      color: var(--warn);
+      font-weight: 500;
+    }
+
+    .stage {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0.75rem 1.25rem;
+      /* Header/footer fixed a scomparsa: la dashboard usa tutto lo schermo */
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 1rem;
+      align-content: start;
+    }
+    @media (min-width: 1200px) {
+      .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.1rem; }
+    }
+
+    .card {
+      position: relative;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 1rem 1rem 0.85rem;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      border-left: 5px solid #cbd5e1;
+      transition: transform 0.12s, box-shadow 0.2s;
+      min-height: 152px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card.zone-green { border-left-color: var(--zone-green); }
+    .card.zone-blue { border-left-color: var(--zone-blue); }
+    .card.zone-orange { border-left-color: var(--zone-orange); }
+    .card.zone-red { border-left-color: var(--zone-red); }
+    .card.offline {
+      border-left-color: #d1d5db;
+      opacity: 0.85;
+      background: var(--surface-2);
+    }
+    .card.beat {
+      transform: scale(1.02);
+      box-shadow: 0 8px 28px rgba(15, 20, 25, 0.1);
+    }
+    .card.summary {
+      min-height: 168px;
+      opacity: 1;
+      background: var(--surface);
+    }
+    .card.summary.offline { opacity: 1; }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.4rem;
+      margin-bottom: 0.25rem;
+    }
+    .name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .status-pill {
+      flex-shrink: 0;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.28rem 0.5rem;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #6b7280;
+    }
+    .status-pill.live {
+      color: #fff;
+      background: var(--zone-green);
+    }
+    .status-pill.unstable {
+      color: #92400e;
+      background: #fef3c7;
+    }
+    .status-pill.done {
+      color: #fff;
+      background: var(--ink);
+    }
+
+    .live-body, .summary-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .summary-body { gap: 0.35rem; }
+
+    .bpm-block {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 0.2rem 0 0.4rem;
+    }
+    .bpm {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(3rem, 5.5vw, 3.75rem);
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+    }
+    .card.zone-green .bpm { color: var(--zone-green); }
+    .card.zone-blue .bpm { color: var(--zone-blue); }
+    .card.zone-orange .bpm { color: var(--zone-orange); }
+    .card.zone-red .bpm { color: var(--zone-red); }
+    .bpm.off { color: #9ca3af !important; font-size: 2.4rem; }
+    .bpm-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-top: 0.2rem;
+      font-weight: 600;
+    }
+
+    .card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.5rem;
+      margin-top: auto;
+    }
+    .pct {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.5rem;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+    }
+    .card.zone-green .pct { color: var(--zone-green); }
+    .card.zone-blue .pct { color: var(--zone-blue); }
+    .card.zone-orange .pct { color: var(--zone-orange); }
+    .card.zone-red .pct { color: var(--zone-red); }
+    .pct.off { color: #9ca3af; }
+    .pct span { font-size: 0.75rem; letter-spacing: 0.06em; opacity: 0.85; }
+    .fei-block {
+      margin-top: 0.45rem;
+      padding-top: 0.45rem;
+      border-top: 1px dashed var(--border);
+      text-align: center;
+    }
+    .fei-block.hidden { display: none; }
+    .fei-score {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .fei-score strong { color: var(--accent); }
+    .fei-score.up strong { color: var(--zone-orange); }
+    .fei-score.down strong { color: var(--zone-blue); }
+    .fei-score .fei-label {
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-right: 0.35rem;
+    }
+    .fei-deltas {
+      margin-top: 0.3rem;
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: var(--muted);
+      line-height: 1.35;
+      letter-spacing: 0.01em;
+    }
+    .fei-deltas .up { color: var(--zone-orange); }
+    .fei-deltas .down { color: var(--zone-blue); }
+    .fei-miss {
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .zone-tag {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .card.zone-green .zone-tag { color: var(--zone-green); }
+    .card.zone-blue .zone-tag { color: var(--zone-blue); }
+    .card.zone-orange .zone-tag { color: var(--zone-orange); }
+    .card.zone-red .zone-tag { color: var(--zone-red); }
+
+    .hr-chart-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 72px;
+      border-radius: 12px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg,
+          rgba(220, 38, 38, 0.10) 0%,
+          rgba(234, 88, 12, 0.08) 35%,
+          rgba(2, 132, 199, 0.07) 65%,
+          rgba(22, 163, 74, 0.08) 100%);
+    }
+    .hr-chart {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 72px;
+    }
+    .hr-chart-legend {
+      display: flex;
+      gap: 0.65rem;
+      justify-content: flex-end;
+      margin-top: 0.2rem;
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hr-chart-legend.hidden { display: none; }
+    .hr-chart-legend .leg-ref::before,
+    .hr-chart-legend .leg-now::before {
+      content: "";
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.18rem;
+      border-radius: 2px;
+      margin-right: 0.25rem;
+      vertical-align: middle;
+    }
+    .hr-chart-legend .leg-ref::before { background: #94a3b8; }
+    .hr-chart-legend .leg-now::before { background: #0f1419; }
+    .summary-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.35;
+      min-height: 72px;
+    }
+    .summary-stats {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.4rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.45rem;
+    }
+    .summary-avg {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.35rem;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+    }
+    .summary-avg span {
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-left: 0.15rem;
+      font-family: "DM Sans", sans-serif;
+      font-weight: 700;
+    }
+    .summary-meta {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+      text-align: right;
+      line-height: 1.35;
+    }
+    .zone-bars {
+      display: flex;
+      height: 4px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e5e7eb;
+      margin-top: 0.15rem;
+    }
+    .zone-bars i {
+      display: block;
+      height: 100%;
+      min-width: 0;
+    }
+    .zone-bars .z-green { background: var(--zone-green); }
+    .zone-bars .z-blue { background: var(--zone-blue); }
+    .zone-bars .z-orange { background: var(--zone-orange); }
+    .zone-bars .z-red { background: var(--zone-red); }
+
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      padding: 4rem 1.5rem;
+      border: 2px dashed rgba(15, 20, 25, 0.12);
+      border-radius: 24px;
+      font-size: 1rem;
+      line-height: 1.55;
+      background: var(--surface);
+      font-weight: 500;
+    }
+
+    .dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      display: grid;
+      grid-template-columns: minmax(160px, 280px) 1fr auto;
+      align-items: center;
+      gap: 0.75rem 1.25rem;
+      padding: 0.55rem 1.1rem 0.65rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: 0 -4px 20px rgba(15, 20, 25, 0.08);
+      transform: translateY(calc(100% - 5px));
+      transition: transform 0.22s ease;
+    }
+    .dock:hover,
+    .dock:focus-within,
+    body.chrome-bottom-open .dock {
+      transform: translateY(0);
+    }
+    .dock-stats {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem 1.35rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      min-width: 0;
+    }
+    .dock-stats .live-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: var(--accent);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+    .dock-stats .live-flag::before {
+      content: "";
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 1.2s ease-in-out infinite;
+    }
+    .dock-stats strong {
+      color: var(--ink);
+      font-weight: 800;
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.02em;
+      margin-left: 0.1rem;
+      vertical-align: middle;
+    }
+    .dock-stats .stat { white-space: nowrap; display: inline-flex; align-items: baseline; gap: 0.3rem; }
+    .dock-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+      min-width: 0;
+    }
+    .disclaimer {
+      font-size: 0.58rem;
+      letter-spacing: 0;
+      text-transform: none;
+      max-width: 260px;
+      text-align: right;
+      line-height: 1.3;
+      font-weight: 400;
+      color: #9ca3af;
+    }
+    .top .workout-bar {
+      flex: 1 1 auto;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+    .top .workout-status { max-width: 180px; }
+    .top-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.2rem;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .top .workout-error {
+      flex: none;
+      text-align: right;
+      max-width: 280px;
+    }
+
+    /* Menu a scomparsa — storico lezioni */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 20, 25, 0.28);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+      z-index: 40;
+    }
+    .drawer-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(360px, 92vw);
+      height: 100%;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: -12px 0 40px rgba(15, 20, 25, 0.12);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(105%);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .drawer-head h2 {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.55rem;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .drawer-head p {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+      font-weight: 500;
+    }
+    .drawer-close {
+      width: 2rem;
+      height: 2rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      color: var(--muted);
+    }
+    .drawer-close:hover { color: var(--ink); background: #eef1f5; }
+    .drawer-body {
+      flex: 1;
+      overflow: auto;
+      padding: 0.5rem;
+    }
+    .history-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 2.5rem 1rem;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+    .history-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 0.75rem 0.85rem;
+      background: transparent;
+      font: inherit;
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .history-item:hover {
+      background: var(--surface-2);
+      border-color: var(--border);
+    }
+    .history-item.active {
+      background: #fff7ed;
+      border-color: rgba(232, 93, 4, 0.35);
+    }
+    .history-item .hi-title {
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--ink);
+      line-height: 1.25;
+    }
+    .history-item .hi-meta {
+      margin-top: 0.25rem;
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.35;
+    }
+    .history-item .hi-actions {
+      display: flex;
+      gap: 0.35rem;
+      margin-top: 0.55rem;
+      flex-wrap: wrap;
+    }
+    .history-item .hi-actions button {
+      font: inherit;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.35rem 0.55rem;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--ink);
+    }
+    .history-item .hi-actions button:hover { background: #eef1f5; }
+    .history-item .hi-actions button.danger {
+      color: #b42318;
+      border-color: rgba(180, 35, 24, 0.25);
+      background: #fff5f4;
+    }
+    .history-item .hi-actions button.danger:hover {
+      background: #ffe8e6;
+    }
+    .ref-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      max-width: 100%;
+    }
+    .ref-chip strong { color: var(--accent-dark); }
+    .ref-chip button {
+      font: inherit;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .ref-chip button:hover { color: var(--ink); background: #eef1f5; }
+    .ref-chip.hidden { display: none; }
+    .summary-fei {
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .summary-fei .fei-big {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin-right: 0.35rem;
+    }
+    .qr-popover {
+      position: fixed;
+      z-index: 60;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0.85rem;
+      box-shadow: var(--shadow);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 240px;
+    }
+    .qr-popover.open { display: flex; }
+    .qr-popover img {
+      width: 180px;
+      height: 180px;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .qr-popover .join-url { font-size: 0.65rem; text-align: center; max-height: none; }
+
+    @media (max-width: 900px) {
+      .dock {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+      }
+      .dock-right { align-items: stretch; }
+      .top { align-items: flex-start; }
+      .top-controls { align-items: stretch; width: 100%; order: 3; flex: 1 1 100%; }
+      .workout-bar { justify-content: space-between; }
+      .workout-status { max-width: none; flex: 1; }
+      .disclaimer { max-width: none; text-align: left; }
+      .join-box { max-width: none; }
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="chrome-edge chrome-edge-top" id="chromeEdgeTop" aria-hidden="true"></div>
+  <div class="chrome-edge chrome-edge-bottom" id="chromeEdgeBottom" aria-hidden="true"></div>
+
+  <header class="top" id="chromeTop">
+    <div class="brand-wrap">
+      <div class="brand">HR<span>cast</span></div>
+      <p class="brand-sub">Sala · battito live</p>
+    </div>
+    <div class="top-controls">
+      <div class="ref-chip hidden" id="refChip">
+        <span>FEI vs <strong id="refChipTitle">—</strong></span>
+        <button type="button" id="btnClearRef" title="Rimuovi riferimento">Rimuovi</button>
+      </div>
+      <section class="workout-bar" id="workoutBar">
+        <div class="workout-status" id="workoutStatus">Pronto a registrare</div>
+        <div class="workout-actions">
+          <input
+            type="text"
+            id="workoutTitleInput"
+            class="workout-title-input"
+            maxlength="80"
+            placeholder="Nome (opzionale)"
+            autocomplete="off"
+            aria-label="Nome allenamento opzionale"
+          />
+          <button type="button" class="train-compare hidden" id="btnTrainCompare" title="Avvia un nuovo allenamento confrontato con questa lezione">
+            Allenati confrontando
+          </button>
+          <button type="button" class="primary" id="btnStartWorkout">Avvia</button>
+          <button type="button" class="danger" id="btnStopWorkout" disabled>Termina</button>
+        </div>
+      </section>
+      <p class="workout-error hidden" id="workoutError"></p>
+    </div>
+    <nav class="top-nav" aria-label="Sezioni">
+      <button type="button" class="nav-tab active" id="navLive" aria-current="page">
+        <span class="nav-dot" aria-hidden="true"></span>
+        Live
+      </button>
+      <button type="button" class="nav-tab" id="navAllenamenti" aria-expanded="false" aria-controls="historyDrawer">
+        Allenamenti
+      </button>
+    </nav>
+  </header>
+
+  <div class="summary-train-bar hidden" id="summaryTrainBar" role="region" aria-label="Allenati confrontando">
+    <div class="st-copy">
+      <div class="st-label">Lezione aperta</div>
+      <div class="st-title" id="summaryTrainTitle">—</div>
+      <p class="st-hint">Allenati di nuovo e confronta lo sforzo (FEI) con questa lezione.</p>
+    </div>
+    <button type="button" class="train-compare" id="btnTrainCompareTop">
+      Allenati confrontando
+    </button>
+  </div>
+
+  <main class="stage" id="sectionLive" aria-label="Live — partecipanti">
+    <div class="grid" id="grid">
+      <div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR. Stessa rete Wi‑Fi (o hotspot del PC coach).</div>
+    </div>
+  </main>
+
+  <footer class="dock" id="chromeBottom" aria-live="polite">
+    <div class="join-box">
+      <img id="qr" width="56" height="56" alt="QR codice partecipante" title="Clicca per ingrandire" />
+      <div class="join-meta">
+        <div>Stanza: <strong id="room">—</strong></div>
+        <a class="join-url" id="joinUrl" href="/participant.html">/participant.html</a>
+        <div class="ip-pick hidden" id="ipPick">
+          Rete:
+          <select id="ipSelect" aria-label="Scegli IP LAN"></select>
+        </div>
+        <p class="qr-hint hidden" id="qrHint"></p>
+      </div>
+    </div>
+
+    <div class="dock-stats">
+      <span class="live-flag" id="liveFlag">LIVE SPINNING</span>
+      <span class="stat">Partecipanti <strong id="liveCount">0</strong></span>
+      <span class="stat">Media <strong id="avgBpm">—</strong> BPM</span>
+      <span class="stat">Max <strong id="maxBpm">—</strong> BPM</span>
+      <span class="stat">FEI <strong id="avgFei">—</strong></span>
+      <span class="stat">Durata <strong id="sessionDuration">00:00</strong></span>
+    </div>
+
+    <div class="dock-right">
+      <span class="disclaimer">Uso sperimentale / ricerca — non clinico.</span>
+    </div>
+  </footer>
+
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+  <aside class="drawer" id="historyDrawer" aria-hidden="true" aria-labelledby="historyTitle">
+    <div class="drawer-head">
+      <div>
+        <h2 id="historyTitle">Allenamenti</h2>
+        <p>Apri, confronta o elimina un allenamento</p>
+      </div>
+      <button type="button" class="drawer-close" id="btnCloseHistory" aria-label="Chiudi">×</button>
+    </div>
+    <div class="drawer-body" id="historyList">
+      <div class="history-empty">Caricamento…</div>
+    </div>
+  </aside>
+
+  <div class="qr-popover" id="qrPopover" role="dialog" aria-label="QR ingresso">
+    <img id="qrLarge" width="180" height="180" alt="QR grande" />
+    <a class="join-url" id="joinUrlLarge" href="/participant.html"></a>
+  </div>
+
+  <script>
+    const M = window.WocMetrics;
+    const STALE_MS = 8000;
+
+    /* Header / footer a scomparsa: zone bordo + hover sul pannello */
+    (function setupChromeReveal() {
+      const topEl = document.getElementById('chromeTop');
+      const bottomEl = document.getElementById('chromeBottom');
+      const edgeTop = document.getElementById('chromeEdgeTop');
+      const edgeBottom = document.getElementById('chromeEdgeBottom');
+      if (!topEl || !bottomEl || !edgeTop || !edgeBottom) return;
+
+      function isActive(el) {
+        return el.matches(':hover') || el.contains(document.activeElement);
+      }
+      function syncTop() {
+        document.body.classList.toggle('chrome-top-open', isActive(topEl));
+      }
+      function syncBottom() {
+        document.body.classList.toggle('chrome-bottom-open', isActive(bottomEl));
+      }
+
+      edgeTop.addEventListener('mouseenter', () => document.body.classList.add('chrome-top-open'));
+      edgeBottom.addEventListener('mouseenter', () => document.body.classList.add('chrome-bottom-open'));
+      topEl.addEventListener('mouseenter', () => document.body.classList.add('chrome-top-open'));
+      bottomEl.addEventListener('mouseenter', () => document.body.classList.add('chrome-bottom-open'));
+      topEl.addEventListener('mouseleave', () => setTimeout(syncTop, 40));
+      bottomEl.addEventListener('mouseleave', () => setTimeout(syncBottom, 40));
+      edgeTop.addEventListener('mouseleave', () => setTimeout(syncTop, 40));
+      edgeBottom.addEventListener('mouseleave', () => setTimeout(syncBottom, 40));
+      topEl.addEventListener('focusin', () => document.body.classList.add('chrome-top-open'));
+      topEl.addEventListener('focusout', () => setTimeout(syncTop, 40));
+      bottomEl.addEventListener('focusin', () => document.body.classList.add('chrome-bottom-open'));
+      bottomEl.addEventListener('focusout', () => setTimeout(syncBottom, 40));
+    })();
+
+    const grid = document.getElementById('grid');
+    const roomEl = document.getElementById('room');
+    const joinUrlEl = document.getElementById('joinUrl');
+    const liveCountEl = document.getElementById('liveCount');
+    const avgBpmEl = document.getElementById('avgBpm');
+    const maxBpmEl = document.getElementById('maxBpm');
+    const avgFeiEl = document.getElementById('avgFei');
+    const sessionDurationEl = document.getElementById('sessionDuration');
+    const liveFlag = document.getElementById('liveFlag');
+    const qrImg = document.getElementById('qr');
+    const ipPick = document.getElementById('ipPick');
+    const ipSelect = document.getElementById('ipSelect');
+    const qrHint = document.getElementById('qrHint');
+    const workoutBar = document.getElementById('workoutBar');
+    const workoutStatus = document.getElementById('workoutStatus');
+    const workoutError = document.getElementById('workoutError');
+    const btnStartWorkout = document.getElementById('btnStartWorkout');
+    const btnStopWorkout = document.getElementById('btnStopWorkout');
+    const btnTrainCompare = document.getElementById('btnTrainCompare');
+    const btnTrainCompareTop = document.getElementById('btnTrainCompareTop');
+    const summaryTrainBar = document.getElementById('summaryTrainBar');
+    const summaryTrainTitle = document.getElementById('summaryTrainTitle');
+    const workoutTitleInput = document.getElementById('workoutTitleInput');
+    const navLive = document.getElementById('navLive');
+    const navAllenamenti = document.getElementById('navAllenamenti');
+    const btnCloseHistory = document.getElementById('btnCloseHistory');
+    const btnClearRef = document.getElementById('btnClearRef');
+    const refChip = document.getElementById('refChip');
+    const refChipTitle = document.getElementById('refChipTitle');
+    const historyDrawer = document.getElementById('historyDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const historyList = document.getElementById('historyList');
+    const qrPopover = document.getElementById('qrPopover');
+    const qrLarge = document.getElementById('qrLarge');
+    const joinUrlLarge = document.getElementById('joinUrlLarge');
+    const cards = new Map();
+    const lastBeatAt = new Map();
+    const socket = io();
+    let workoutTick = null;
+    let sessionTick = null;
+    let currentWorkout = null;
+    let sessionStartedAt = null;
+    let lastStudents = [];
+    /** @type {Map<string, object>|null} */
+    let summaryByParticipant = null;
+    let lastCompletedWorkout = null;
+    let wasRecording = false;
+    let summaryLoadId = null;
+    let historyOpen = false;
+    let selectedHistoryId = null;
+    /** Riferimento FEI scelto prima di Avvia (client). */
+    let pendingReference = null;
+    /** Snapshot compare live dal server. */
+    let liveCompare = null;
+    /** Compare finale per riepilogo duale. */
+    let summaryCompare = null;
+    /** Workout di riferimento completo (sample) per overlay grafico. */
+    let summaryReferenceWorkout = null;
+
+    function formatDuration(ms) {
+      const sec = Math.max(0, Math.floor(ms / 1000));
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function formatSigned(n, digits) {
+      if (n == null || !Number.isFinite(Number(n))) return '—';
+      const v = Number(n);
+      const abs = digits != null ? Math.abs(v).toFixed(digits) : String(Math.round(Math.abs(v)));
+      if (v > 0) return `+${abs}`;
+      if (v < 0) return `−${abs}`;
+      return digits != null ? (0).toFixed(digits) : '0';
+    }
+
+    /** Delta già in punti display (int/zona/kcal %), non frazioni 0–1. */
+    function formatDelta(n, digits) {
+      return formatSigned(n, digits != null ? digits : 0);
+    }
+
+    function formatFei(fei) {
+      return formatSigned(fei, 1);
+    }
+
+    function feiToneClass(fei) {
+      if (fei == null || !Number.isFinite(Number(fei))) return '';
+      if (Number(fei) > 0.5) return 'up';
+      if (Number(fei) < -0.5) return 'down';
+      return '';
+    }
+
+    function deltaToneClass(v) {
+      if (v == null || !Number.isFinite(Number(v))) return '';
+      if (Number(v) > 0.5) return 'up';
+      if (Number(v) < -0.5) return 'down';
+      return '';
+    }
+
+    function formatFeiDeltas(d) {
+      d = d || {};
+      return (
+        `<span class="${deltaToneClass(d.intensity)}">int ${formatDelta(d.intensity)}</span>` +
+        ` · <span class="${deltaToneClass(d.bpm)}">bpm ${formatDelta(d.bpm)}</span>` +
+        ` · <span class="${deltaToneClass(d.zoneHigh)}">z↑ ${formatDelta(d.zoneHigh)}</span>` +
+        ` · <span class="${deltaToneClass(d.kcal)}">kcal/min ${formatDelta(d.kcal)}%</span>`
+      );
+    }
+
+    function updateRefChip() {
+      const ref = pendingReference;
+      if (!ref || !ref.id) {
+        refChip.classList.add('hidden');
+        refChipTitle.textContent = '—';
+        return;
+      }
+      refChip.classList.remove('hidden');
+      refChipTitle.textContent = ref.title || 'Riferimento';
+    }
+
+    function setPendingReference(ref) {
+      if (!ref || !ref.id) {
+        pendingReference = null;
+      } else {
+        pendingReference = {
+          id: ref.id,
+          title: ref.title || 'Riferimento',
+          startedAt: ref.startedAt || null,
+          endedAt: ref.endedAt || null
+        };
+      }
+      updateRefChip();
+      highlightHistoryItem(selectedHistoryId);
+    }
+
+    function clearPendingReference() {
+      if (currentWorkout) {
+        showWorkoutError('Non puoi cambiare il riferimento durante la registrazione');
+        return;
+      }
+      setPendingReference(null);
+      showWorkoutError('');
+    }
+
+    /** Mostra «Allenati confrontando» solo con lezione aperta e senza REC live. */
+    function updateTrainCompareButton() {
+      const openLesson = Boolean(
+        summaryByParticipant && lastCompletedWorkout && lastCompletedWorkout.id
+      );
+      const show = openLesson && !currentWorkout;
+      const title = show
+        ? lastCompletedWorkout.title || 'Allenamento'
+        : '—';
+      const tip = show
+        ? `Avvia un nuovo allenamento confrontato con «${title}» (FEI, auto-stop a fine rif.)`
+        : '';
+      if (summaryTrainBar) {
+        summaryTrainBar.classList.toggle('hidden', !show);
+      }
+      if (summaryTrainTitle) {
+        summaryTrainTitle.textContent = title;
+      }
+      if (btnTrainCompareTop) {
+        btnTrainCompareTop.disabled = !show;
+        btnTrainCompareTop.title = tip;
+      }
+      if (btnTrainCompare) {
+        btnTrainCompare.classList.toggle('hidden', !show);
+        btnTrainCompare.disabled = !show;
+        btnTrainCompare.title = tip;
+      }
+      if (workoutBar) {
+        workoutBar.classList.toggle('summary-open', show);
+      }
+    }
+
+    btnClearRef.addEventListener('click', clearPendingReference);
+
+    function intensityPct(bpm, profile) {
+      return M.intensityPct(bpm, profile);
+    }
+
+    function zoneFromPct(pct) {
+      if (pct == null) return 'off';
+      if (pct < 70) return 'green';
+      if (pct < 80) return 'blue';
+      if (pct < 90) return 'orange';
+      return 'red';
+    }
+
+    function zoneLabel(zone) {
+      if (zone === 'green') return 'Z1 · Recupero';
+      if (zone === 'blue') return 'Z2 · Aerobico';
+      if (zone === 'orange') return 'Z3 · Soglia';
+      if (zone === 'red') return 'Z4 · Max';
+      return '—';
+    }
+
+    function zoneColor(zone) {
+      if (zone === 'green') return getComputedStyle(document.documentElement).getPropertyValue('--zone-green').trim() || '#16a34a';
+      if (zone === 'blue') return getComputedStyle(document.documentElement).getPropertyValue('--zone-blue').trim() || '#0284c7';
+      if (zone === 'orange') return getComputedStyle(document.documentElement).getPropertyValue('--zone-orange').trim() || '#ea580c';
+      if (zone === 'red') return getComputedStyle(document.documentElement).getPropertyValue('--zone-red').trim() || '#dc2626';
+      return '#9ca3af';
+    }
+
+    function samplePct(sample, profile) {
+      if (sample && sample.intensityPct != null && Number.isFinite(Number(sample.intensityPct))) {
+        return Math.round(Number(sample.intensityPct));
+      }
+      return intensityPct(sample && sample.bpm, profile);
+    }
+
+    function downsample(samples, maxPoints) {
+      const n = samples.length;
+      if (n <= maxPoints) return samples.slice();
+      const out = [];
+      const step = (n - 1) / (maxPoints - 1);
+      for (let i = 0; i < maxPoints; i++) {
+        out.push(samples[Math.round(i * step)]);
+      }
+      return out;
+    }
+
+    function buildParticipantSummary(p, workout, profile) {
+      const samples = Array.isArray(p.samples) ? p.samples : [];
+      const name = p.name || 'Partecipante';
+      if (!samples.length) {
+        return { id: p.id, name, empty: true, samples: [] };
+      }
+
+      const bpms = samples.map((s) => Number(s.bpm)).filter((n) => Number.isFinite(n) && n > 0);
+      const avg = bpms.length ? Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length) : null;
+      const max = bpms.length ? Math.max(...bpms) : null;
+      const t0 = workout.startedAt || samples[0].t;
+      const t1 = workout.endedAt || samples[samples.length - 1].t;
+      const durationMs = Math.max(0, (t1 || 0) - (t0 || 0));
+
+      const zoneMs = { green: 0, blue: 0, orange: 0, red: 0 };
+      for (let i = 0; i < samples.length; i++) {
+        const cur = samples[i];
+        const next = samples[i + 1];
+        const dt = next ? Math.max(0, next.t - cur.t) : 1000;
+        const pct = samplePct(cur, profile);
+        const z = zoneFromPct(pct);
+        if (z !== 'off') zoneMs[z] += dt;
+      }
+      const totalZone = zoneMs.green + zoneMs.blue + zoneMs.orange + zoneMs.red;
+      let dominant = 'green';
+      let dominantMs = -1;
+      for (const z of ['green', 'blue', 'orange', 'red']) {
+        if (zoneMs[z] > dominantMs) {
+          dominantMs = zoneMs[z];
+          dominant = z;
+        }
+      }
+
+      let kcal = null;
+      if (p.kcalSession != null && Number.isFinite(Number(p.kcalSession))) {
+        kcal = Math.round(Number(p.kcalSession));
+      } else {
+        const live = lastStudents.find((s) => s.id === p.id);
+        if (live && live.kcalSession != null) kcal = Math.round(Number(live.kcalSession));
+      }
+
+      return {
+        id: p.id,
+        name,
+        empty: false,
+        samples: downsample(samples, 120),
+        startedAt: workout.startedAt || samples[0].t || null,
+        endedAt: workout.endedAt || samples[samples.length - 1].t || null,
+        avg,
+        max,
+        durationMs,
+        zoneMs,
+        zoneShare: totalZone
+          ? {
+              green: zoneMs.green / totalZone,
+              blue: zoneMs.blue / totalZone,
+              orange: zoneMs.orange / totalZone,
+              red: zoneMs.red / totalZone
+            }
+          : { green: 0, blue: 0, orange: 0, red: 0 },
+        dominant,
+        kcal,
+        profile
+      };
+    }
+
+    /** Serie HR del riferimento allineata al partecipante (se match). */
+    function refOverlayForSummary(summary) {
+      if (!summaryReferenceWorkout || !summary || !M || !M.matchReferenceParticipant) {
+        return null;
+      }
+      const refP = M.matchReferenceParticipant(
+        summaryReferenceWorkout,
+        summary.id,
+        summary.name
+      );
+      if (!refP || !Array.isArray(refP.samples) || !refP.samples.length) return null;
+      return {
+        samples: downsample(refP.samples, 120),
+        startedAt: summaryReferenceWorkout.startedAt || refP.samples[0].t || null
+      };
+    }
+
+    /**
+     * Normalizza i sample su elapsed (ms).
+     * align: 'workout' = da startedAt lezione; 'first' = dal primo battito (overlay confronta).
+     */
+    function samplesAsElapsed(samples, startedAt, align) {
+      const list = Array.isArray(samples) ? samples : [];
+      if (!list.length) return [];
+      let t0;
+      if (align === 'first') {
+        const first = list.find((s) => Number.isFinite(Number(s.bpm)) && Number(s.bpm) > 0);
+        t0 = first ? Number(first.t) : Number(list[0].t) || 0;
+      } else if (startedAt != null && Number.isFinite(Number(startedAt))) {
+        t0 = Number(startedAt);
+      } else {
+        t0 = Number(list[0].t) || 0;
+      }
+      const out = [];
+      for (const s of list) {
+        const bpm = Number(s.bpm);
+        if (!Number.isFinite(bpm) || bpm <= 0) continue;
+        const t = Number(s.t);
+        if (!Number.isFinite(t)) continue;
+        // In overlay confronta ignora sample prima del primo battito utile
+        if (align === 'first' && t < t0) continue;
+        out.push({
+          t: Math.max(0, t - t0),
+          bpm,
+          intensityPct: s.intensityPct
+        });
+      }
+      return out;
+    }
+
+    /**
+     * Porta la serie su asse 0→1 (forma intera).
+     * In overlay confronta ogni allenamento mantiene la sua forma completa
+     * e occupa tutta la larghezza — niente tronco sulla durata più corta.
+     */
+    function samplesAsUnitSpan(samples) {
+      const list = Array.isArray(samples) ? samples : [];
+      if (!list.length) return [];
+      const t0 = list[0].t;
+      const t1 = list[list.length - 1].t;
+      const span = Math.max(1, t1 - t0);
+      return list.map((s) => ({
+        t: (s.t - t0) / span,
+        bpm: s.bpm,
+        intensityPct: s.intensityPct
+      }));
+    }
+
+    function setActiveNav(section) {
+      const live = section === 'live';
+      navLive.classList.toggle('active', live);
+      navLive.setAttribute('aria-current', live ? 'page' : 'false');
+      navAllenamenti.classList.toggle('active', !live);
+      navAllenamenti.setAttribute('aria-expanded', live ? 'false' : String(historyOpen));
+    }
+
+    function clearSummaryMode() {
+      summaryByParticipant = null;
+      lastCompletedWorkout = null;
+      summaryLoadId = null;
+      selectedHistoryId = null;
+      summaryCompare = null;
+      summaryReferenceWorkout = null;
+      highlightHistoryItem(null);
+      updateTrainCompareButton();
+    }
+
+    function goLiveSection() {
+      if (historyOpen) closeHistory();
+      else setActiveNav('live');
+      if (summaryByParticipant) {
+        clearSummaryMode();
+        if (!currentWorkout) {
+          workoutStatus.textContent = pendingReference
+            ? `Pronto · FEI vs ${pendingReference.title || 'riferimento'} · auto-stop a fine rif.`
+            : 'Pronto a registrare';
+        }
+        showWorkoutError('');
+      }
+      updateTrainCompareButton();
+      renderAll(lastStudents);
+    }
+
+    async function loadAndShowSummary(workoutId, detailMaybe) {
+      const id = String(workoutId || '').trim();
+      if (!id) return;
+      if (summaryLoadId === id && summaryByParticipant) return;
+      summaryLoadId = id;
+      selectedHistoryId = id;
+
+      try {
+        let detail = detailMaybe;
+        if (!detail || !detail.participants) {
+          const detailRes = await fetch(`/api/workouts/${encodeURIComponent(id)}`);
+          if (!detailRes.ok) {
+            throw new Error(`Impossibile caricare il riepilogo (${detailRes.status})`);
+          }
+          detail = await detailRes.json();
+        }
+        await enterSummaryMode(detail);
+      } catch (err) {
+        summaryLoadId = null;
+        showWorkoutError(err.message || 'Riepilogo non disponibile');
+      }
+    }
+
+    async function enterSummaryMode(workout) {
+      if (!workout || !workout.id) return;
+      lastCompletedWorkout = workout;
+      summaryByParticipant = new Map();
+      selectedHistoryId = workout.id;
+      summaryCompare = null;
+      summaryReferenceWorkout = null;
+      const list = Object.values(workout.participants || {});
+      for (const p of list) {
+        const live = lastStudents.find((s) => s.id === p.id);
+        const profile = live && live.profile ? live.profile : null;
+        summaryByParticipant.set(p.id, buildParticipantSummary(p, workout, profile));
+      }
+
+      const duration = formatDuration(
+        Math.max(0, (workout.endedAt || Date.now()) - (workout.startedAt || Date.now()))
+      );
+      const refId = workout.referenceWorkoutId;
+      let statusHtml =
+        `<strong>Riepilogo</strong> · ${workout.title || 'Allenamento'} · ${duration} · ` +
+        `${workout.sampleCount || 0} campioni`;
+
+      if (refId) {
+        try {
+          const [cmpRes, refRes] = await Promise.all([
+            fetch(
+              `/api/workout/compare?a=${encodeURIComponent(workout.id)}&b=${encodeURIComponent(refId)}`
+            ),
+            fetch(`/api/workouts/${encodeURIComponent(refId)}`)
+          ]);
+          if (cmpRes.ok) {
+            const cmpData = await cmpRes.json();
+            summaryCompare = cmpData.compare || null;
+            const refTitle =
+              (summaryCompare && summaryCompare.reference && summaryCompare.reference.title) ||
+              workout.referenceTitle ||
+              'riferimento';
+            const classFei =
+              summaryCompare && summaryCompare.classAvg ? summaryCompare.classAvg.fei : null;
+            statusHtml =
+              `<strong>Confronto FEI</strong> · ${workout.title || 'Allenamento'} vs ${refTitle}` +
+              (classFei != null ? ` · media ${formatFei(classFei)}` : '') +
+              ` · ${duration}`;
+            if (avgFeiEl) avgFeiEl.textContent = classFei != null ? formatFei(classFei) : '—';
+          }
+          if (refRes.ok) {
+            summaryReferenceWorkout = await refRes.json();
+          }
+        } catch {
+          /* riepilogo singolo ok anche senza compare */
+        }
+      } else if (avgFeiEl && !liveCompare) {
+        avgFeiEl.textContent = '—';
+      }
+
+      workoutStatus.innerHTML = statusHtml;
+      showWorkoutError('');
+      setActiveNav('live');
+      highlightHistoryItem(workout.id);
+      renderSummaryGrid(list);
+      updateTrainCompareButton();
+    }
+
+    /** Dashboard solo con i partecipanti della lezione aperta (niente roster live). */
+    function renderSummaryGrid(participantList) {
+      const list = Array.isArray(participantList) ? participantList : [];
+      cards.clear();
+      lastBeatAt.clear();
+      grid.innerHTML = '';
+
+      if (!list.length) {
+        grid.innerHTML =
+          '<div class="empty">Nessun partecipante in questo allenamento.</div>';
+      } else {
+        for (const p of list) {
+          const live = lastStudents.find((s) => s.id === p.id);
+          grid.appendChild(
+            renderStudent({
+              id: p.id,
+              name: p.name,
+              live: false,
+              bpm: null,
+              profile: (live && live.profile) || null
+            })
+          );
+        }
+      }
+
+      liveCountEl.textContent = String(list.length);
+      avgBpmEl.textContent = '—';
+      maxBpmEl.textContent = '—';
+      const room = roomEl.textContent || 'spinning';
+      liveFlag.textContent = `RIEPILOGO ${String(room).toUpperCase()}`;
+    }
+
+    function formatHistoryWhen(w) {
+      const t = w.endedAt || w.startedAt;
+      if (!t) return '—';
+      return new Date(t).toLocaleString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function highlightHistoryItem(id) {
+      for (const item of historyList.querySelectorAll('.history-item')) {
+        item.classList.toggle('active', Boolean(id && item.dataset.id === id));
+      }
+    }
+
+    function renderHistoryList(workouts) {
+      if (!workouts.length) {
+        historyList.innerHTML =
+          '<div class="history-empty">Nessun allenamento salvato ancora.<br/>Avvia e termina un allenamento per crearne uno.</div>';
+        return;
+      }
+      historyList.innerHTML = '';
+      for (const w of workouts) {
+        const item = document.createElement('div');
+        item.className = 'history-item' + (selectedHistoryId === w.id ? ' active' : '');
+        item.dataset.id = w.id;
+        const dur =
+          w.startedAt && w.endedAt
+            ? formatDuration(w.endedAt - w.startedAt)
+            : w.status === 'recording'
+              ? 'in corso'
+              : '—';
+        item.innerHTML =
+          `<div class="hi-title">${escapeHtml(w.title || 'Allenamento')}</div>` +
+          `<div class="hi-meta">${formatHistoryWhen(w)} · ${w.participantCount || 0} part. · ` +
+          `${w.sampleCount || 0} campioni · ${dur}` +
+          (w.referenceWorkoutId ? ' · FEI' : '') +
+          `</div>` +
+          `<div class="hi-actions">` +
+          `<button type="button" class="hi-open">Apri</button>` +
+          `<button type="button" class="hi-compare">Confronta</button>` +
+          `<button type="button" class="hi-rename">Nome</button>` +
+          `<button type="button" class="danger hi-delete">Elimina</button>` +
+          `</div>`;
+        item.querySelector('.hi-open').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (currentWorkout) {
+            showWorkoutError('Termina la registrazione in corso prima di aprire un allenamento');
+            return;
+          }
+          closeHistory();
+          await loadAndShowSummary(w.id);
+        });
+        item.querySelector('.hi-compare').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (currentWorkout) {
+            showWorkoutError('Termina la registrazione in corso prima di scegliere un riferimento');
+            return;
+          }
+          if (w.status === 'recording') {
+            showWorkoutError('Non puoi usare una sessione in corso come riferimento');
+            return;
+          }
+          setPendingReference(w);
+          closeHistory();
+          if (summaryByParticipant) {
+            clearSummaryMode();
+            renderAll(lastStudents);
+          }
+          workoutStatus.textContent =
+            `Pronto · FEI vs ${pendingReference.title || 'riferimento'} · auto-stop a fine rif.`;
+          showWorkoutError('');
+          setActiveNav('live');
+          updateTrainCompareButton();
+        });
+        item.querySelector('.hi-rename').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (w.status === 'recording') {
+            showWorkoutError('Non puoi rinominare una sessione in corso da qui');
+            return;
+          }
+          const next = window.prompt('Nome allenamento (vuoto = Allenamento)', w.title || '');
+          if (next == null) return;
+          try {
+            const res = await fetch(`/api/workouts/${encodeURIComponent(w.id)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: next.trim() })
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.ok) {
+              throw new Error(data?.error || `Errore HTTP ${res.status}`);
+            }
+            if (pendingReference && pendingReference.id === w.id) {
+              pendingReference = { ...pendingReference, title: data.workout.title };
+              updateRefChip();
+            }
+            if (lastCompletedWorkout && lastCompletedWorkout.id === w.id) {
+              lastCompletedWorkout = { ...lastCompletedWorkout, title: data.workout.title };
+              if (summaryByParticipant) {
+                summaryLoadId = null;
+                await loadAndShowSummary(w.id);
+              }
+            }
+            showWorkoutError('');
+            await loadHistory();
+          } catch (err) {
+            showWorkoutError(err.message || 'Rinomina non riuscita');
+          }
+        });
+        item.querySelector('.hi-delete').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (currentWorkout && currentWorkout.id === w.id) {
+            showWorkoutError('Termina la registrazione prima di eliminare');
+            return;
+          }
+          if (w.status === 'recording') {
+            showWorkoutError('Non puoi eliminare una sessione in corso');
+            return;
+          }
+          const label = w.title || 'Allenamento';
+          if (!window.confirm(`Eliminare «${label}»? L'azione non si può annullare.`)) return;
+          try {
+            const res = await fetch(`/api/workouts/${encodeURIComponent(w.id)}`, {
+              method: 'DELETE'
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.ok) {
+              throw new Error(data?.error || `Errore HTTP ${res.status}`);
+            }
+            if (pendingReference && pendingReference.id === w.id) {
+              setPendingReference(null);
+            }
+            if (selectedHistoryId === w.id || (lastCompletedWorkout && lastCompletedWorkout.id === w.id)) {
+              clearSummaryMode();
+              renderAll(lastStudents);
+            }
+            showWorkoutError('');
+            await loadHistory();
+          } catch (err) {
+            showWorkoutError(err.message || 'Eliminazione non riuscita');
+          }
+        });
+        historyList.appendChild(item);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function loadHistory() {
+      historyList.innerHTML = '<div class="history-empty">Caricamento…</div>';
+      try {
+        const res = await fetch('/api/workouts?limit=40');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderHistoryList(Array.isArray(data.workouts) ? data.workouts : []);
+      } catch {
+        historyList.innerHTML =
+          '<div class="history-empty">Impossibile caricare lo storico.<br/>Controlla che il server sia avviato.</div>';
+      }
+    }
+
+    function openHistory() {
+      historyOpen = true;
+      historyDrawer.classList.add('open');
+      historyDrawer.setAttribute('aria-hidden', 'false');
+      drawerBackdrop.hidden = false;
+      requestAnimationFrame(() => drawerBackdrop.classList.add('open'));
+      setActiveNav('allenamenti');
+      loadHistory();
+    }
+
+    function closeHistory() {
+      const wasOpen = historyOpen;
+      historyOpen = false;
+      historyDrawer.classList.remove('open');
+      historyDrawer.setAttribute('aria-hidden', 'true');
+      drawerBackdrop.classList.remove('open');
+      if (wasOpen) setActiveNav('live');
+      setTimeout(() => {
+        if (!historyOpen) drawerBackdrop.hidden = true;
+      }, 250);
+    }
+
+    function toggleHistory() {
+      if (historyOpen) closeHistory();
+      else openHistory();
+    }
+
+    navLive.addEventListener('click', goLiveSection);
+    navAllenamenti.addEventListener('click', toggleHistory);
+    btnCloseHistory.addEventListener('click', closeHistory);
+    drawerBackdrop.addEventListener('click', closeHistory);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (qrPopover.classList.contains('open')) closeQrPopover();
+        else if (historyOpen) closeHistory();
+      }
+    });
+
+    function openQrPopover() {
+      qrLarge.src = qrImg.src;
+      joinUrlLarge.href = joinUrlEl.href;
+      joinUrlLarge.textContent = joinUrlEl.textContent;
+      const rect = qrImg.getBoundingClientRect();
+      qrPopover.classList.add('open');
+      const popW = 220;
+      let left = rect.left;
+      let top = rect.top - 220;
+      if (top < 8) top = rect.bottom + 8;
+      if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+      if (left < 8) left = 8;
+      qrPopover.style.left = `${left}px`;
+      qrPopover.style.top = `${top}px`;
+    }
+
+    function closeQrPopover() {
+      qrPopover.classList.remove('open');
+    }
+
+    qrImg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (qrPopover.classList.contains('open')) closeQrPopover();
+      else openQrPopover();
+    });
+    document.addEventListener('click', (e) => {
+      if (!qrPopover.classList.contains('open')) return;
+      if (qrPopover.contains(e.target) || e.target === qrImg) return;
+      closeQrPopover();
+    });
+
+    function drawPolyline(ctx, samples, xAt, yAt) {
+      ctx.beginPath();
+      for (let i = 0; i < samples.length; i++) {
+        const s = samples[i];
+        const x = xAt(s.t);
+        const y = yAt(s.bpm);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    }
+
+    /**
+     * Grafico HR riepilogo. Se `refOverlay` è presente, disegna anche
+     * la curva della lezione originale in grigio (stessa timeline t del FEI).
+     */
+    function drawHrChart(canvas, summary, refOverlay) {
+      if (!canvas || !summary || summary.empty || !summary.samples.length) return;
+      const compare = Boolean(refOverlay && refOverlay.samples && refOverlay.samples.length);
+      // Confronta: dal primo battito + forma intera su 0→1 (come il grafico singolo)
+      // Singolo: elapsed dalla lezione
+      let samples = samplesAsElapsed(
+        summary.samples,
+        summary.startedAt,
+        compare ? 'first' : 'workout'
+      );
+      if (!samples.length) return;
+      let refSamples = compare
+        ? samplesAsElapsed(refOverlay.samples, refOverlay.startedAt, 'first')
+        : [];
+
+      let spanT;
+      if (compare) {
+        samples = samplesAsUnitSpan(samples);
+        refSamples = samplesAsUnitSpan(refSamples);
+        spanT = 1;
+      } else {
+        spanT = Math.max(1, samples[samples.length - 1].t);
+      }
+      if (!samples.length) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const cssW = Math.max(120, Math.floor(rect.width) || 160);
+      const cssH = Math.max(64, Math.floor(rect.height) || 72);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      canvas.style.width = `${cssW}px`;
+      canvas.style.height = `${cssH}px`;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      const padX = 2;
+      const padY = 6;
+      const w = cssW - padX * 2;
+      const h = cssH - padY * 2;
+      const bpms = samples.map((s) => s.bpm).concat(refSamples.map((s) => s.bpm));
+      let minB = Math.min(...bpms);
+      let maxB = Math.max(...bpms);
+      if (maxB - minB < 20) {
+        const mid = (maxB + minB) / 2;
+        minB = mid - 15;
+        maxB = mid + 15;
+      }
+      minB = Math.max(40, minB - 8);
+      maxB = maxB + 8;
+      const spanB = Math.max(1, maxB - minB);
+
+      const xAt = (t) => padX + (Math.max(0, Math.min(spanT, t)) / spanT) * w;
+      const yAt = (bpm) => padY + h - ((bpm - minB) / spanB) * h;
+      const base = padY + h;
+
+      // 1) Riferimento originale — area + linea grigia sotto
+      if (refSamples.length >= 2) {
+        ctx.beginPath();
+        ctx.moveTo(xAt(refSamples[0].t), base);
+        for (let i = 0; i < refSamples.length; i++) {
+          ctx.lineTo(xAt(refSamples[i].t), yAt(refSamples[i].bpm));
+        }
+        ctx.lineTo(xAt(refSamples[refSamples.length - 1].t), base);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.28)';
+        ctx.fill();
+
+        drawPolyline(ctx, refSamples, xAt, yAt);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      // 2) Sessione attuale — area a zone + linea nera sopra
+      for (let i = 0; i < samples.length - 1; i++) {
+        const a = samples[i];
+        const b = samples[i + 1];
+        const z = zoneFromPct(samplePct(a, summary.profile));
+        const x0 = xAt(a.t);
+        const x1 = xAt(b.t);
+        const y0 = yAt(a.bpm);
+        const y1 = yAt(b.bpm);
+        ctx.beginPath();
+        ctx.moveTo(x0, base);
+        ctx.lineTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x1, base);
+        ctx.closePath();
+        ctx.fillStyle = zoneColor(z);
+        ctx.globalAlpha = 0.35;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      drawPolyline(ctx, samples, xAt, yAt);
+      ctx.strokeStyle = '#0f1419';
+      ctx.lineWidth = 1.75;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    function applySummaryVisual(card, summary) {
+      ensureCardStructure(card);
+      card.classList.add('summary');
+      card.classList.remove('offline', 'beat');
+      card.classList.remove('zone-green', 'zone-blue', 'zone-orange', 'zone-red');
+      if (!summary.empty) card.classList.add(`zone-${summary.dominant}`);
+
+      card.querySelector('.name').textContent = summary.name || '—';
+      const pill = card.querySelector('.status-pill');
+      pill.textContent = 'DONE';
+      pill.className = 'status-pill done';
+
+      const liveBody = card.querySelector('.live-body');
+      const summaryBody = card.querySelector('.summary-body');
+      if (!liveBody || !summaryBody) return;
+      liveBody.classList.add('hidden');
+      summaryBody.classList.remove('hidden');
+
+      const emptyEl = card.querySelector('.summary-empty');
+      const chartWrap = card.querySelector('.hr-chart-wrap');
+      const stats = card.querySelector('.summary-stats');
+
+      if (summary.empty) {
+        emptyEl.classList.remove('hidden');
+        chartWrap.classList.add('hidden');
+        stats.classList.add('hidden');
+        emptyEl.textContent = 'Nessun dato HR';
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      chartWrap.classList.remove('hidden');
+      stats.classList.remove('hidden');
+
+      const avgEl = card.querySelector('.summary-avg');
+      avgEl.innerHTML =
+        summary.avg != null
+          ? `${summary.avg}<span>avg</span>`
+          : `—<span>avg</span>`;
+
+      const parts = [];
+      if (summary.max != null) parts.push(`max ${summary.max}`);
+      if (summary.kcal != null && summary.kcal > 0) parts.push(`${summary.kcal} kcal`);
+      parts.push(formatDuration(summary.durationMs));
+      card.querySelector('.summary-meta').textContent = parts.join(' · ');
+
+      const bars = card.querySelector('.zone-bars');
+      bars.innerHTML = '';
+      for (const z of ['green', 'blue', 'orange', 'red']) {
+        const share = summary.zoneShare[z] || 0;
+        if (share < 0.005) continue;
+        const i = document.createElement('i');
+        i.className = `z-${z}`;
+        i.style.flex = String(share);
+        bars.appendChild(i);
+      }
+
+      let feiRow = card.querySelector('.summary-fei');
+      if (!feiRow) {
+        feiRow = document.createElement('div');
+        feiRow.className = 'summary-fei';
+        stats.appendChild(feiRow);
+      }
+      const cmp =
+        summaryCompare && summaryCompare.participants
+          ? summaryCompare.participants[summary.id]
+          : null;
+      if (cmp && cmp.matched && cmp.fei != null) {
+        const d = cmp.deltas || {};
+        feiRow.innerHTML =
+          `<span class="fei-big">${formatFei(cmp.fei)}</span>FEI` +
+          ` · ${formatFeiDeltas(d).replace(/<\/?span[^>]*>/g, '')}`;
+        feiRow.classList.remove('hidden');
+      } else if (summaryCompare) {
+        feiRow.textContent = 'FEI — (non in riferimento)';
+        feiRow.classList.remove('hidden');
+      } else {
+        feiRow.classList.add('hidden');
+        feiRow.textContent = '';
+      }
+
+      let legend = card.querySelector('.hr-chart-legend');
+      if (!legend) {
+        legend = document.createElement('div');
+        legend.className = 'hr-chart-legend hidden';
+        legend.setAttribute('aria-hidden', 'true');
+        legend.innerHTML =
+          '<span class="leg-ref">rif.</span><span class="leg-now">ora</span>';
+        const wrap = card.querySelector('.hr-chart-wrap');
+        if (wrap && wrap.parentNode) wrap.after(legend);
+      }
+      const refOverlay = refOverlayForSummary(summary);
+      legend.classList.toggle('hidden', !refOverlay);
+
+      const canvas = card.querySelector('.hr-chart');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => drawHrChart(canvas, summary, refOverlay));
+      });
+    }
+
+    function cardMarkup() {
+      return `
+        <div class="card-head">
+          <div class="name"></div>
+          <div class="status-pill">OFFLINE</div>
+        </div>
+        <div class="live-body">
+          <div class="bpm-block">
+            <div class="bpm off">--</div>
+            <div class="bpm-label">♥ BPM</div>
+          </div>
+          <div class="card-foot">
+            <div class="pct off">—<span>%</span></div>
+            <div class="zone-tag">—</div>
+          </div>
+          <div class="fei-block hidden">
+            <div class="fei-score"><span class="fei-label">FEI</span><strong>—</strong></div>
+            <div class="fei-deltas"></div>
+            <div class="fei-miss hidden">Non in riferimento</div>
+          </div>
+        </div>
+        <div class="summary-body hidden">
+          <div class="summary-empty hidden">Nessun dato HR</div>
+          <div class="hr-chart-wrap">
+            <canvas class="hr-chart" aria-label="Grafico battito"></canvas>
+          </div>
+          <div class="hr-chart-legend hidden" aria-hidden="true">
+            <span class="leg-ref">rif.</span>
+            <span class="leg-now">ora</span>
+          </div>
+          <div class="summary-stats">
+            <div class="summary-avg">—<span>avg</span></div>
+            <div>
+              <div class="summary-meta"></div>
+              <div class="zone-bars" aria-hidden="true"></div>
+              <div class="summary-fei hidden"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function ensureCardStructure(card) {
+      if (
+        card.querySelector('.live-body') &&
+        card.querySelector('.summary-body') &&
+        card.querySelector('.fei-block')
+      ) {
+        return;
+      }
+      const name = card.querySelector('.name')?.textContent || '';
+      card.innerHTML = cardMarkup();
+      if (name) card.querySelector('.name').textContent = name;
+    }
+
+    function showLiveBody(card) {
+      ensureCardStructure(card);
+      card.classList.remove('summary');
+      const liveBody = card.querySelector('.live-body');
+      const summaryBody = card.querySelector('.summary-body');
+      if (liveBody) liveBody.classList.remove('hidden');
+      if (summaryBody) summaryBody.classList.add('hidden');
+    }
+
+    function connectionState(s) {
+      if (!s.live) return 'offline';
+      const t = lastBeatAt.get(s.id) || 0;
+      if (t && Date.now() - t > STALE_MS) return 'unstable';
+      return 'live';
+    }
+
+    function showWorkoutError(msg) {
+      if (!msg) {
+        workoutError.classList.add('hidden');
+        workoutError.textContent = '';
+        return;
+      }
+      workoutError.textContent = msg;
+      workoutError.classList.remove('hidden');
+    }
+
+    function updateSessionClock() {
+      if (!sessionStartedAt) {
+        sessionDurationEl.textContent = '00:00';
+        return;
+      }
+      sessionDurationEl.textContent = formatDuration(Date.now() - sessionStartedAt);
+    }
+
+    function ensureSessionClock(students) {
+      const any = students.some((s) => s.live || s.bpm != null);
+      if (any && !sessionStartedAt) {
+        sessionStartedAt = Date.now();
+        if (!sessionTick) sessionTick = setInterval(updateSessionClock, 1000);
+      }
+      if (!students.length) {
+        sessionStartedAt = null;
+        if (sessionTick) {
+          clearInterval(sessionTick);
+          sessionTick = null;
+        }
+      }
+      updateSessionClock();
+    }
+
+    function updateLiveStats(students) {
+      liveCountEl.textContent = String(students.length);
+      const liveBpms = students
+        .filter((s) => s.live && s.bpm != null && Number.isFinite(s.bpm))
+        .map((s) => Number(s.bpm));
+      if (!liveBpms.length) {
+        avgBpmEl.textContent = '—';
+        maxBpmEl.textContent = '—';
+      } else {
+        const sum = liveBpms.reduce((a, b) => a + b, 0);
+        avgBpmEl.textContent = String(Math.round(sum / liveBpms.length));
+        maxBpmEl.textContent = String(Math.max(...liveBpms));
+      }
+      if (liveCompare && liveCompare.classAvg && liveCompare.classAvg.fei != null) {
+        avgFeiEl.textContent = formatFei(liveCompare.classAvg.fei);
+      } else if (!(summaryCompare && summaryCompare.classAvg)) {
+        avgFeiEl.textContent = '—';
+      }
+      const room = roomEl.textContent || 'spinning';
+      liveFlag.textContent = `LIVE ${String(room).toUpperCase()}`;
+      ensureSessionClock(students);
+    }
+
+    function renderWorkoutStatus(payload) {
+      const active = Boolean(payload && payload.active);
+      const w = payload && payload.workout;
+      const completed = payload && payload.completed;
+      const reference = payload && payload.reference;
+      const automation = payload && payload.automation;
+      liveCompare = active && payload && payload.compare ? payload.compare : null;
+      currentWorkout = active ? w : null;
+      workoutBar.classList.toggle('recording', active);
+      btnStartWorkout.disabled = active;
+      btnStopWorkout.disabled = !active;
+
+      if (active && reference && reference.id) {
+        pendingReference = {
+          id: reference.id,
+          title: reference.title || 'Riferimento',
+          startedAt: reference.startedAt || null,
+          endedAt: reference.endedAt || null
+        };
+        updateRefChip();
+      }
+
+      if (workoutTick) {
+        clearInterval(workoutTick);
+        workoutTick = null;
+      }
+
+      // Passaggio REC → stop: mostra subito i grafici di riepilogo
+      if (wasRecording && !active) {
+        liveCompare = null;
+        const completedId = (completed && completed.id) || (w && w.id);
+        if (completedId) loadAndShowSummary(completedId);
+      }
+      wasRecording = active;
+
+      if (!active || !w) {
+        if (summaryByParticipant && lastCompletedWorkout) {
+          const snap = lastCompletedWorkout;
+          const duration = formatDuration(
+            Math.max(0, (snap.endedAt || Date.now()) - (snap.startedAt || Date.now()))
+          );
+          const classFei =
+            summaryCompare && summaryCompare.classAvg ? summaryCompare.classAvg.fei : null;
+          const autoBit =
+            snap.stopReason === 'auto-compare' ||
+            (automation && automation.stopReason === 'auto-compare')
+              ? ' · auto'
+              : '';
+          workoutStatus.innerHTML =
+            (snap.referenceWorkoutId
+              ? `<strong>Confronto FEI</strong> · ${snap.title || 'Allenamento'}`
+              : `<strong>Riepilogo</strong> · ${snap.title || 'Allenamento'}`) +
+            ` · ${duration}` +
+            autoBit +
+            (classFei != null ? ` · media ${formatFei(classFei)}` : '') +
+            ` · ${snap.sampleCount || 0} campioni`;
+          setActiveNav('live');
+        } else {
+          workoutStatus.textContent = pendingReference
+            ? `Pronto · FEI vs ${pendingReference.title || 'riferimento'} · auto-stop a fine rif.`
+            : 'Pronto a registrare';
+          setActiveNav('live');
+        }
+        updateTrainCompareButton();
+        if (lastStudents.length) renderAll(lastStudents);
+        return;
+      }
+
+      const paint = () => {
+        const snap = currentWorkout || w;
+        const elapsed = formatDuration(Date.now() - (snap.startedAt || Date.now()));
+        const classFei =
+          liveCompare && liveCompare.classAvg ? liveCompare.classAvg.fei : null;
+        const refBit = pendingReference
+          ? ` · FEI vs ${pendingReference.title || 'rif.'}`
+          : '';
+        let autoBit = '';
+        if (automation && automation.autoStop && automation.autoStopAt) {
+          const rem = Math.max(0, Number(automation.autoStopAt) - Date.now());
+          autoBit = ` · fine tra ${formatDuration(rem)}`;
+        }
+        workoutStatus.innerHTML =
+          `<span class="rec"><span class="dot" aria-hidden="true"></span>REC</span> ` +
+          `<strong>${snap.title || 'Allenamento'}</strong> · ${elapsed}` +
+          refBit +
+          autoBit +
+          (classFei != null ? ` · FEI ${formatFei(classFei)}` : '') +
+          ` · ${snap.sampleCount || 0} campioni`;
+        if (avgFeiEl) {
+          avgFeiEl.textContent = classFei != null ? formatFei(classFei) : '—';
+        }
+        if (liveCompare && lastStudents.length) {
+          for (const s of lastStudents) {
+            const card = cards.get(s.id);
+            if (card && !(summaryByParticipant && summaryByParticipant.has(s.id))) {
+              applyCardVisual(card, s);
+            }
+          }
+        }
+      };
+      setActiveNav('live');
+      updateTrainCompareButton();
+      paint();
+      workoutTick = setInterval(paint, 1000);
+    }
+
+    async function postWorkout(path, body) {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+      if (res.status === 404) {
+        throw new Error('API allenamento assente: riavvia il server (npm start) e ricarica la pagina');
+      }
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || `Errore HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    async function startWorkout() {
+      showWorkoutError('');
+      btnStartWorkout.disabled = true;
+      if (btnTrainCompare) btnTrainCompare.disabled = true;
+      if (btnTrainCompareTop) btnTrainCompareTop.disabled = true;
+      const customTitle = (workoutTitleInput && workoutTitleInput.value || '').trim();
+      const title =
+        customTitle ||
+        `Allenamento ${new Date().toLocaleString('it-IT', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        })}`;
+      try {
+        const body = { title };
+        if (pendingReference && pendingReference.id) {
+          body.referenceWorkoutId = pendingReference.id;
+        }
+        const data = await postWorkout('/api/workout/start', body);
+        wasRecording = true;
+        clearSummaryMode();
+        if (workoutTitleInput) workoutTitleInput.value = '';
+        if (data.reference && data.reference.id) {
+          pendingReference = {
+            id: data.reference.id,
+            title: data.reference.title || pendingReference.title,
+            startedAt: data.reference.startedAt || null,
+            endedAt: data.reference.endedAt || null
+          };
+          updateRefChip();
+        }
+        renderWorkoutStatus({
+          active: true,
+          workout: data.workout,
+          completed: null,
+          reference: data.reference || pendingReference,
+          compare: null
+        });
+        renderAll(lastStudents);
+      } catch (err) {
+        btnStartWorkout.disabled = false;
+        if (btnTrainCompare) btnTrainCompare.disabled = false;
+        if (btnTrainCompareTop) btnTrainCompareTop.disabled = false;
+        showWorkoutError(err.message || 'Avvio non riuscito');
+        updateTrainCompareButton();
+      }
+    }
+
+    /** Dalla lezione aperta: avvia REC con quella lezione come riferimento FEI. */
+    async function trainAgainstOpenedLesson() {
+      if (currentWorkout) {
+        showWorkoutError('Termina la registrazione in corso prima di allenarti confrontando');
+        return;
+      }
+      const lesson = lastCompletedWorkout;
+      if (!lesson || !lesson.id) {
+        showWorkoutError('Apri prima una lezione da Allenamenti');
+        return;
+      }
+      setPendingReference(lesson);
+      await startWorkout();
+    }
+
+    async function stopWorkout() {
+      showWorkoutError('');
+      btnStopWorkout.disabled = true;
+      try {
+        const data = await postWorkout('/api/workout/stop', {});
+        const w = data.workout;
+        const detail = data.detail || null;
+        if (!w || !w.id) {
+          renderWorkoutStatus({ active: false, workout: null, completed: null });
+          showWorkoutError('Allenamento terminato, ma senza id sessione');
+          return;
+        }
+        await loadAndShowSummary(w.id, detail);
+        renderWorkoutStatus({
+          active: false,
+          workout: null,
+          completed: w
+        });
+      } catch (err) {
+        btnStopWorkout.disabled = false;
+        showWorkoutError(err.message || 'Stop non riuscito');
+      }
+    }
+
+    btnStartWorkout.addEventListener('click', startWorkout);
+    btnStopWorkout.addEventListener('click', stopWorkout);
+    if (btnTrainCompare) {
+      btnTrainCompare.addEventListener('click', trainAgainstOpenedLesson);
+    }
+    if (btnTrainCompareTop) {
+      btnTrainCompareTop.addEventListener('click', trainAgainstOpenedLesson);
+    }
+    if (workoutTitleInput) {
+      workoutTitleInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !btnStartWorkout.disabled && !currentWorkout) {
+          e.preventDefault();
+          startWorkout();
+        }
+      });
+    }
+    socket.on('workout:status', renderWorkoutStatus);
+    fetch('/api/workout')
+      .then(async (r) => {
+        if (r.status === 404) {
+          showWorkoutError('API allenamento assente: riavvia il server (npm start) e ricarica la pagina');
+          return null;
+        }
+        return r.json();
+      })
+      .then((payload) => {
+        if (payload) renderWorkoutStatus(payload);
+      })
+      .catch(() => {});
+
+    function isLoopbackHost(host) {
+      return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
+    }
+
+    function participantPath(room) {
+      return `/participant.html?room=${encodeURIComponent(room || 'spinning')}`;
+    }
+
+    function buildLanUrl(info, ip) {
+      const proto = info.https === false ? 'http' : 'https';
+      const port = info.port || location.port || 3033;
+      return `${proto}://${ip}:${port}${participantPath(info.room)}`;
+    }
+
+    function pickParticipantUrl(info, forcedIp) {
+      const path = participantPath(info.room);
+      const ips = info.ips || [];
+      const host = location.hostname;
+
+      if (forcedIp) return buildLanUrl(info, forcedIp);
+      if (!isLoopbackHost(host)) return `${location.origin}${path}`;
+      if (ips.length) return buildLanUrl(info, ips[0]);
+      return `${location.origin}${path}`;
+    }
+
+    function setJoinUrl(url) {
+      joinUrlEl.href = url;
+      joinUrlEl.textContent = url;
+
+      const loopbackInUrl = /:\/\/(localhost|127\.0\.0\.1|\[::1\])[:/]/i.test(url);
+      if (loopbackInUrl) {
+        qrHint.textContent = 'Nessun IP LAN trovato. Collega il PC al Wi‑Fi (o hotspot) e ricarica.';
+        qrHint.classList.remove('hidden');
+      } else {
+        qrHint.classList.add('hidden');
+      }
+
+      qrImg.onerror = () => {
+        qrHint.textContent = 'QR non generato dal server. Controlla /api/qr.';
+        qrHint.classList.remove('hidden');
+      };
+      qrImg.src = `/api/qr?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+    }
+
+    function setupIpPicker(info) {
+      const ips = info.ips || [];
+      if (ips.length <= 1) {
+        ipPick.classList.add('hidden');
+        return;
+      }
+      ipPick.classList.remove('hidden');
+      ipSelect.innerHTML = '';
+      for (const ip of ips) {
+        const opt = document.createElement('option');
+        opt.value = ip;
+        opt.textContent = ip;
+        ipSelect.appendChild(opt);
+      }
+      const host = location.hostname;
+      if (!isLoopbackHost(host) && ips.includes(host)) ipSelect.value = host;
+      ipSelect.onchange = () => setJoinUrl(pickParticipantUrl(info, ipSelect.value));
+    }
+
+    fetch('/api/info').then((r) => r.json()).then((info) => {
+      roomEl.textContent = info.room;
+      setupIpPicker(info);
+      const forced = (info.ips || []).length > 1 ? ipSelect.value : null;
+      setJoinUrl(pickParticipantUrl(info, forced || undefined));
+    }).catch(() => {
+      setJoinUrl(`${location.origin}${participantPath('spinning')}`);
+    });
+
+    function applyCardVisual(card, s) {
+      if (summaryByParticipant && summaryByParticipant.has(s.id)) {
+        applySummaryVisual(card, summaryByParticipant.get(s.id));
+        return;
+      }
+
+      showLiveBody(card);
+
+      const bpm = s.bpm != null && Number.isFinite(Number(s.bpm)) ? Number(s.bpm) : null;
+      const pct =
+        s.intensityPct != null && Number.isFinite(Number(s.intensityPct))
+          ? Math.round(Number(s.intensityPct))
+          : intensityPct(bpm, s.profile);
+      const zone = s.live && bpm != null ? zoneFromPct(pct) : 'off';
+      const state = connectionState(s);
+
+      card.classList.remove('zone-green', 'zone-blue', 'zone-orange', 'zone-red', 'offline');
+      if (zone !== 'off') card.classList.add(`zone-${zone}`);
+      if (state === 'offline') card.classList.add('offline');
+
+      card.querySelector('.name').textContent = s.name || '—';
+
+      const pill = card.querySelector('.status-pill');
+      if (state === 'live') {
+        pill.textContent = 'LIVE';
+        pill.className = 'status-pill live';
+      } else if (state === 'unstable') {
+        pill.textContent = 'INSTABILE';
+        pill.className = 'status-pill unstable';
+      } else {
+        pill.textContent = 'OFFLINE';
+        pill.className = 'status-pill';
+      }
+
+      const bpmEl = card.querySelector('.bpm');
+      if (bpm != null) {
+        bpmEl.textContent = String(bpm);
+        bpmEl.classList.toggle('off', state === 'offline');
+      } else {
+        bpmEl.textContent = '--';
+        bpmEl.classList.add('off');
+      }
+
+      const pctEl = card.querySelector('.pct');
+      if (pct != null && s.live) {
+        pctEl.innerHTML = `${pct}<span>%</span>`;
+        pctEl.classList.remove('off');
+      } else {
+        pctEl.innerHTML = `—<span>%</span>`;
+        pctEl.classList.add('off');
+      }
+
+      const kcal = s.kcalSession != null ? Math.round(Number(s.kcalSession)) : null;
+      const zoneTag = card.querySelector('.zone-tag');
+      if (kcal != null && kcal > 0 && s.live) {
+        zoneTag.textContent = `${zoneLabel(zone)} · ${kcal} kcal`;
+      } else {
+        zoneTag.textContent = zoneLabel(zone);
+      }
+
+      const feiBlock = card.querySelector('.fei-block');
+      if (!feiBlock) return;
+      const cmp =
+        liveCompare && liveCompare.participants ? liveCompare.participants[s.id] : null;
+      if (!liveCompare || !currentWorkout) {
+        feiBlock.classList.add('hidden');
+        return;
+      }
+      feiBlock.classList.remove('hidden');
+      const scoreEl = feiBlock.querySelector('.fei-score');
+      const deltasEl = feiBlock.querySelector('.fei-deltas');
+      const missEl = feiBlock.querySelector('.fei-miss');
+      if (!cmp || !cmp.matched) {
+        scoreEl.classList.add('hidden');
+        deltasEl.classList.add('hidden');
+        missEl.classList.remove('hidden');
+        return;
+      }
+      missEl.classList.add('hidden');
+      scoreEl.classList.remove('hidden');
+      deltasEl.classList.remove('hidden');
+      const tone = feiToneClass(cmp.fei);
+      scoreEl.className = `fei-score${tone ? ` ${tone}` : ''}`;
+      scoreEl.innerHTML =
+        `<span class="fei-label">FEI</span><strong>${formatFei(cmp.fei)}</strong>` +
+        (cmp.headlinePp != null
+          ? ` <span style="font-family:'DM Sans',sans-serif;font-size:0.65rem;font-weight:700;color:var(--muted);margin-left:0.25rem">Δ ${formatDelta(cmp.headlinePp)}%</span>`
+          : '');
+      const d = cmp.deltas || {};
+      deltasEl.innerHTML = formatFeiDeltas(d);
+    }
+
+    function renderStudent(s) {
+      let card = cards.get(s.id);
+      if (!card) {
+        const el = document.createElement('article');
+        el.className = 'card';
+        el.dataset.id = s.id;
+        el.innerHTML = cardMarkup();
+        cards.set(s.id, el);
+        card = el;
+      } else {
+        ensureCardStructure(card);
+      }
+
+      if (!(summaryByParticipant && summaryByParticipant.has(s.id)) && s.bpm != null && s.live) {
+        lastBeatAt.set(s.id, Date.now());
+        card.classList.add('beat');
+        setTimeout(() => card.classList.remove('beat'), 180);
+      }
+
+      applyCardVisual(card, s);
+      return card;
+    }
+
+    function renderAll(students) {
+      lastStudents = students;
+      // In riepilogo la griglia resta bloccata sui partecipanti della lezione
+      if (summaryByParticipant) return;
+
+      updateLiveStats(students);
+
+      if (!students.length) {
+        grid.innerHTML = '<div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR. Stessa rete Wi‑Fi (o hotspot del PC coach).</div>';
+        cards.clear();
+        lastBeatAt.clear();
+        return;
+      }
+
+      const seen = new Set();
+      grid.innerHTML = '';
+      for (const s of students) {
+        seen.add(s.id);
+        grid.appendChild(renderStudent(s));
+      }
+      for (const id of [...cards.keys()]) {
+        if (!seen.has(id)) {
+          cards.delete(id);
+          lastBeatAt.delete(id);
+        }
+      }
+    }
+
+    // Re-eval unstable states periodically
+    setInterval(() => {
+      if (!lastStudents.length) return;
+      for (const s of lastStudents) {
+        const card = cards.get(s.id);
+        if (!card) continue;
+        if (summaryByParticipant && summaryByParticipant.has(s.id)) continue;
+        applyCardVisual(card, s);
+      }
+      updateLiveStats(lastStudents);
+    }, 2000);
+
+    socket.on('lista-allievi', (payload) => {
+      const students = payload.participants || payload.students || [];
+      if (summaryByParticipant) {
+        lastStudents = students;
+        return;
+      }
+      renderAll(students);
+    });
+    socket.on('battito-allievo', (payload) => {
+      const id = payload.id || payload.participantId;
+      if (summaryByParticipant) return;
+      const card = cards.get(id);
+      if (!card) return;
+      lastBeatAt.set(id, Date.now());
+      const bpm = Number(payload.bpm);
+      const s = lastStudents.find((x) => x.id === id) || { id, name: card.querySelector('.name').textContent };
+      s.bpm = bpm;
+      s.live = true;
+      if (payload.deviceName) s.deviceName = payload.deviceName;
+      applyCardVisual(card, s);
+      card.classList.add('beat');
+      setTimeout(() => card.classList.remove('beat'), 180);
+      updateLiveStats(lastStudents);
+    });
+
+    window.addEventListener('resize', () => {
+      if (!summaryByParticipant) return;
+      for (const [id, summary] of summaryByParticipant) {
+        const card = cards.get(id);
+        if (!card || summary.empty) continue;
+        const canvas = card.querySelector('.hr-chart');
+        drawHrChart(canvas, summary, refOverlayForSummary(summary));
+      }
+    });
+  </script>
+</body>
+</html>

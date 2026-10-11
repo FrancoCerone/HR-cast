@@ -1,0 +1,6 @@
+node_modules/
+certs/
+data/
+*.pem
+.DS_Store
+.env

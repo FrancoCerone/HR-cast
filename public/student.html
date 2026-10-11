@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="refresh" content="0;url=/participant.html" />
+  <script>
+    location.replace('/participant.html' + location.search + location.hash);
+  </script>
+  <title>Redirect…</title>
+</head>
+<body>
+  <p>Reindirizzamento a <a id="link" href="/participant.html">participant.html</a>…</p>
+  <script>
+    document.getElementById('link').href = '/participant.html' + location.search + location.hash;
+  </script>
+</body>
+</html>

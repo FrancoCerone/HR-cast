@@ -1,0 +1,19 @@
+{
+  "name": "hrcast",
+  "version": "2.0.0",
+  "description": "Raccolta BPM in sala: HypeRate (multi-WS) o Watch BLE → telefono → server HTTPS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "certs": "node scripts/gen-certs.js",
+    "certs:force": "node scripts/gen-certs.js --force"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "selfsigned": "^2.4.1",
+    "socket.io": "^4.8.1",
+    "ws": "^8.21.3"
+  }
+}
