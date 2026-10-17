@@ -38,10 +38,37 @@ const PORT = Number(process.env.PORT) || 3033;
 const ROOM = process.env.ROOM || 'spinning';
 const STALE_MS = 15000;
 const USE_HTTPS = process.env.HTTPS !== 'false';
+const HYPERATE_TOKEN = String(process.env.HYPERATE_TOKEN || '').trim();
+/** Chiave opzionale per trigger esterni start/stop allenamento (`CONTROL_API_KEY`). */
+const CONTROL_API_KEY = String(process.env.CONTROL_API_KEY || '').trim();
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '32kb' }));
+
+/**
+ * Auth per `/api/control/*`.
+ * Se CONTROL_API_KEY è impostata: richiede header `X-API-Key` / `Authorization: Bearer …`
+ * oppure query `?key=…`. Se assente, gli endpoint restano aperti (LAN fidata).
+ */
+function requireControlApiKey(req, res, next) {
+  if (!CONTROL_API_KEY) {
+    next();
+    return;
+  }
+  const headerKey =
+    String(req.get('x-api-key') || '').trim() ||
+    String(req.get('authorization') || '')
+      .replace(/^Bearer\s+/i, '')
+      .trim();
+  const queryKey = String(req.query.key || '').trim();
+  const provided = headerKey || queryKey;
+  if (provided !== CONTROL_API_KEY) {
+    res.status(401).json({ ok: false, error: 'non autorizzato (CONTROL_API_KEY)' });
+    return;
+  }
+  next();
+}
 app.get('/metrics.js', (_req, res) => {
   res.type('application/javascript');
   res.sendFile(path.join(__dirname, 'lib', 'metrics.js'));
@@ -184,7 +211,7 @@ function recordBpm({
   quality = null,
   room = ROOM,
   profile = null,
-  intensityPct: clientPct = null,
+  intensityPct: _clientPct = null,
   kcalDelta = null
 }) {
   const value = Math.round(Number(bpm));
@@ -203,10 +230,8 @@ function recordBpm({
   participant.deviceName = deviceName ? String(deviceName).slice(0, 80) : participant.deviceName;
   participant.quality = quality != null ? String(quality).slice(0, 40) : participant.quality;
 
-  const pct =
-    clientPct != null && Number.isFinite(Number(clientPct))
-      ? Math.min(100, Math.max(0, Math.round(Number(clientPct))))
-      : WocMetrics.intensityPct(value, participant.profile);
+  // Unica fonte: sempre da profilo server (non fidarsi del % client → evita mobile≠dashboard).
+  const pct = WocMetrics.intensityPct(value, participant.profile);
   participant.intensityPct = pct;
 
   const kcalMin = WocMetrics.kcalPerMinute(value, participant.profile);
@@ -317,8 +342,9 @@ app.get('/api/info', (req, res) => {
     mode: 'hyperate-or-ble',
     architecture: 'watch-hyperate → server-ws | watch-ble → phone-webbluetooth → server',
     hyperate: {
-      tokenSource: 'participant-profile',
-      hint: 'Ogni allievo inserisce il proprio token API HypeRate in profilazione'
+      tokenSource: 'env',
+      tokenConfigured: Boolean(HYPERATE_TOKEN),
+      hint: 'Token API HypeRate condiviso da HYPERATE_TOKEN nel .env'
     }
   });
 });
@@ -491,30 +517,29 @@ const hyperate = createHypeRateHub({
 
 app.get('/api/hyperate/status', (_req, res) => {
   res.json({
-    tokenSource: 'participant-profile',
+    tokenSource: 'env',
+    tokenConfigured: Boolean(HYPERATE_TOKEN),
     subscriptions: hyperate.list()
   });
 });
 
 /**
  * Avvia sottoscrizione HypeRate per un partecipante (HTTP fallback).
- * Body: { participantId, hyperateId, hyperateToken, name?, room?, profile? }
+ * Body: { participantId, hyperateId, name?, room?, profile? }
+ * Il token API è letto da HYPERATE_TOKEN (.env).
  */
 app.post('/api/hyperate/subscribe', (req, res) => {
   const body = req.body || {};
   const participantId = participantIdFromBody(body);
   const hyperateId = hyperate.normalizeId(body.hyperateId || body.sessionId || body.id);
-  const hyperateToken = hyperate.normalizeToken(
-    body.hyperateToken || body.token || body.apiToken
-  );
   if (!participantId || !hyperateId) {
     res.status(400).json({ ok: false, error: 'serve participantId e hyperateId' });
     return;
   }
-  if (!hyperateToken) {
-    res.status(400).json({
+  if (!HYPERATE_TOKEN) {
+    res.status(503).json({
       ok: false,
-      error: 'serve hyperateToken (token API inserito nel profilo)'
+      error: 'HYPERATE_TOKEN non configurato sul server (.env)'
     });
     return;
   }
@@ -522,7 +547,7 @@ app.post('/api/hyperate/subscribe', (req, res) => {
   const result = hyperate.subscribe({
     participantId,
     hyperateId,
-    token: hyperateToken,
+    token: HYPERATE_TOKEN,
     name: body.name,
     room: body.room || ROOM
   });
@@ -555,12 +580,59 @@ app.post('/api/workout/start', (req, res) => {
   res.status(result.ok ? 200 : 409).json(result);
 });
 
+/**
+ * Lezione aperta in dashboard coach (riepilogo).
+ * Body: { workoutId } — stringa id, oppure null/vuoto per chiudere.
+ * Usata dallo start esterno come riferimento FEI se non passato esplicitamente.
+ */
+app.post('/api/workout/opened', (req, res) => {
+  const raw = req.body?.workoutId;
+  const workoutId = raw == null || raw === '' ? null : String(raw);
+  const result = workouts.setOpenedLesson(workoutId);
+  res.status(result.ok ? 200 : 404).json(result);
+});
+
 /** Termina e salva allenamento corrente. Body opzionale: { reason?: 'manual'|'api' } */
 app.post('/api/workout/stop', (req, res) => {
   const reason = req.body?.reason === 'api' ? 'api' : 'manual';
   const result = workouts.stop({ reason });
   res.status(result.ok ? 200 : 409).json(result);
 });
+
+/**
+ * Controllo esterno (automazioni, script, webhook).
+ * Stesso comportamento della dashboard, ma reason=api e auth opzionale via CONTROL_API_KEY.
+ * Accetta POST (JSON) e GET (query) per start/stop.
+ */
+app.get('/api/control/workout', requireControlApiKey, (_req, res) => {
+  res.json(workouts.status());
+});
+
+function controlStart(req, res) {
+  const src = { ...(req.query || {}), ...(req.body || {}) };
+  // Riferimento esplicito, altrimenti lezione aperta in dashboard (riepilogo coach)
+  let refId = String(src.referenceWorkoutId || src.referenceId || '').trim();
+  if (!refId) {
+    const opened = workouts.getOpenedLessonId();
+    if (opened && workouts.get(opened)) refId = opened;
+  }
+  const result = workouts.start({
+    title: src.title,
+    room: ROOM,
+    referenceWorkoutId: refId || undefined
+  });
+  res.status(result.ok ? 200 : 409).json(result);
+}
+
+function controlStop(_req, res) {
+  const result = workouts.stop({ reason: 'api' });
+  res.status(result.ok ? 200 : 409).json(result);
+}
+
+app.post('/api/control/workout/start', requireControlApiKey, controlStart);
+app.get('/api/control/workout/start', requireControlApiKey, controlStart);
+app.post('/api/control/workout/stop', requireControlApiKey, controlStop);
+app.get('/api/control/workout/stop', requireControlApiKey, controlStop);
 
 /**
  * Confronto FEI tra due sessioni.
@@ -655,7 +727,8 @@ io.on('connection', (socket) => {
     ips: localIps(),
     https: USE_HTTPS,
     mode: 'hyperate-or-ble',
-    hyperateTokenSource: 'participant-profile'
+    hyperateTokenSource: 'env',
+    hyperateTokenConfigured: Boolean(HYPERATE_TOKEN)
   });
   socket.emit('lista-allievi', { room: ROOM, students: rosterPayload(), participants: rosterPayload() });
   socket.emit('workout:status', workouts.status());
@@ -666,6 +739,13 @@ io.on('connection', (socket) => {
       room: ROOM,
       referenceWorkoutId: payload?.referenceWorkoutId
     });
+    if (typeof ack === 'function') ack(result);
+  });
+
+  socket.on('workout:opened', (payload, ack) => {
+    const raw = payload?.workoutId;
+    const workoutId = raw == null || raw === '' ? null : String(raw);
+    const result = workouts.setOpenedLesson(workoutId);
     if (typeof ack === 'function') ack(result);
   });
 
@@ -715,15 +795,13 @@ io.on('connection', (socket) => {
 
   /**
    * Sottoscrivi il flusso HypeRate di questo allievo.
-   * { participantId?, hyperateId, hyperateToken, name?, room?, profile? }
+   * { participantId?, hyperateId, name?, room?, profile? }
+   * Il token API è letto da HYPERATE_TOKEN (.env).
    */
   socket.on('participant:hyperate', (payload, ack) => {
     const id = participantIdFromBody(payload, socket.data.participantId || socket.id);
     const hyperateId = hyperate.normalizeId(
       payload?.hyperateId || payload?.sessionId || payload?.hyperate_id
-    );
-    const hyperateToken = hyperate.normalizeToken(
-      payload?.hyperateToken || payload?.token || payload?.apiToken
     );
     if (!id || !hyperateId) {
       if (typeof ack === 'function') {
@@ -731,9 +809,9 @@ io.on('connection', (socket) => {
       }
       return;
     }
-    if (!hyperateToken) {
+    if (!HYPERATE_TOKEN) {
       if (typeof ack === 'function') {
-        ack({ ok: false, error: 'serve hyperateToken (inseriscilo nel profilo)' });
+        ack({ ok: false, error: 'HYPERATE_TOKEN non configurato sul server (.env)' });
       }
       return;
     }
@@ -744,7 +822,7 @@ io.on('connection', (socket) => {
     const result = hyperate.subscribe({
       participantId: id,
       hyperateId,
-      token: hyperateToken,
+      token: HYPERATE_TOKEN,
       name: payload?.name,
       room: payload?.room || ROOM
     });
@@ -812,8 +890,17 @@ server.listen(PORT, '0.0.0.0', () => {
   for (const ip of ips) {
     console.log(`[Partecipante] ${proto}://${ip}:${PORT}/participant.html?room=${ROOM}`);
   }
-  console.log('[HypeRate] Token per allievo (profilazione) — nessuna chiave globale ENV');
+  if (HYPERATE_TOKEN) {
+    console.log('[HypeRate] Token da HYPERATE_TOKEN (.env) — condiviso per tutti');
+  } else {
+    console.warn('[HypeRate] HYPERATE_TOKEN mancante nel .env — sottoscrizioni Watch disabilitate');
+  }
   console.log(`[Workout] Storico in ${workouts.dir}`);
+  if (CONTROL_API_KEY) {
+    console.log('[Control] /api/control/workout/start|stop protetti da CONTROL_API_KEY');
+  } else {
+    console.log('[Control] /api/control/workout/start|stop aperti (imposta CONTROL_API_KEY per proteggerli)');
+  }
   if (USE_HTTPS) {
     console.log('[TLS] Accetta il certificato self-signed sul telefono (una tantum).');
     console.log('[TLS] HTTPS=false per HTTP solo su localhost (Web Bluetooth non funziona da IP LAN).');

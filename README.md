@@ -186,6 +186,30 @@ Dalla dashboard coach: **Avvia allenamento** / **Termina**. Durante la registraz
 | `GET /api/workouts` | Elenco storico (senza serie complete) |
 | `GET /api/workouts/:id` | Dettaglio con campioni BPM |
 
+#### Trigger esterni (automazioni / script)
+
+| Endpoint | Descrizione |
+|----------|-------------|
+| `GET /api/control/workout` | Stato corrente |
+| `POST` o `GET /api/control/workout/start` | Avvia registrazione (`title?`, `referenceWorkoutId?`) |
+| `POST` o `GET /api/control/workout/stop` | Termina e salva (`reason: api`) |
+
+Se `CONTROL_API_KEY` è nel `.env`, passa `X-API-Key: …`, `Authorization: Bearer …` oppure `?key=…`.
+
+```bash
+# Avvia
+curl -k -X POST https://HOST:3033/api/control/workout/start \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: tua-chiave" \
+  -d '{"title":"Lezione serale"}'
+
+# Stop
+curl -k -X POST https://HOST:3033/api/control/workout/stop \
+  -H "X-API-Key: tua-chiave"
+```
+
+La dashboard coach continua a usare `/api/workout/*` (senza chiave). Lo stato si propaga in tempo reale via Socket.IO (`workout:status`).
+
 Socket.IO: `workout:start` / `workout:stop` (con ack) e broadcast `workout:status`.
 
 File tipici:

@@ -11,20 +11,25 @@
   <script src="/metrics.js"></script>
   <style>
     :root {
-      --bg: #eef0f4;
-      --surface: #ffffff;
-      --surface-2: #f7f8fa;
-      --ink: #0f1419;
-      --text: #14181f;
-      --muted: #6b7280;
-      --accent: #e85d04;
-      --pulse: #16a34a;
-      --warn: #b45309;
-      --zone-blue: #0284c7;
-      --zone-orange: #ea580c;
-      --zone-red: #dc2626;
-      --border: rgba(15, 20, 25, 0.1);
-      --shadow: 0 8px 32px rgba(15, 20, 25, 0.08);
+      --bg: #0e0e10;
+      --surface: #1a1a1e;
+      --surface-2: #222228;
+      --ink: #fafafa;
+      --text: #f2f2f4;
+      --muted: #8b8b96;
+      --accent: #f5d000;
+      --pulse: #4ade80;
+      --warn: #fbbf24;
+      --zone-blue: #38bdf8;
+      --zone-green: #4ade80;
+      --zone-yellow: #facc15;
+      --zone-orange: #fb923c;
+      --zone-red: #f87171;
+      --zone-black: #e4e4e7;
+      --border: rgba(255, 255, 255, 0.08);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      --hover: #2a2a32;
+      --chart-now: #f5d000;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -32,7 +37,7 @@
       color: var(--text);
       min-height: 100dvh;
       background:
-        radial-gradient(ellipse 90% 50% at 50% -15%, rgba(232, 93, 4, 0.09), transparent 55%),
+        radial-gradient(ellipse 90% 50% at 50% -15%, rgba(245, 208, 0, 0.08), transparent 55%),
         var(--bg);
       padding: 1rem 1.15rem;
       padding-bottom: max(1.15rem, env(safe-area-inset-bottom));
@@ -40,15 +45,22 @@
       flex-direction: column;
       max-width: 480px;
       margin: 0 auto;
+      color-scheme: dark;
     }
 
     .brand-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.75rem;
+      gap: 0.65rem;
       margin-bottom: 1rem;
       flex-shrink: 0;
+    }
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-width: 0;
     }
     .brand {
       font-family: "Bebas Neue", sans-serif;
@@ -59,26 +71,43 @@
       margin-bottom: 0;
     }
     .brand span { color: var(--accent); }
-    .btn-menu {
-      font: inherit;
-      font-weight: 700;
-      font-size: 0.72rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+    .btn-icon {
+      width: 2.45rem;
+      height: 2.45rem;
+      flex-shrink: 0;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.45rem 0.75rem;
+      border-radius: 12px;
       cursor: pointer;
       color: var(--text);
       background: var(--surface);
-      box-shadow: 0 2px 8px rgba(15, 20, 25, 0.05);
-      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
     }
-    .btn-menu:hover { background: var(--surface-2); }
-    .btn-menu[aria-expanded="true"] {
-      background: var(--ink);
-      color: #fff;
-      border-color: var(--ink);
+    .btn-icon:hover { background: var(--hover); }
+    .btn-icon[aria-expanded="true"] {
+      background: var(--accent);
+      color: #0e0e10;
+      border-color: var(--accent);
+    }
+    .btn-icon svg {
+      width: 1.2rem;
+      height: 1.2rem;
+      display: block;
+    }
+    .hamburger-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 1.05rem;
+    }
+    .hamburger-lines i {
+      display: block;
+      height: 2px;
+      border-radius: 1px;
+      background: currentColor;
     }
 
     .sheet {
@@ -138,7 +167,7 @@
     select:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.15);
+      box-shadow: 0 0 0 3px rgba(245, 208, 0, 0.18);
       background: var(--surface);
     }
     .field-grid {
@@ -170,9 +199,9 @@
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: nowrap;
-      background: var(--surface-2);
+      background: rgba(245, 208, 0, 0.12);
       color: var(--accent);
-      border: 1px solid rgba(232, 93, 4, 0.25);
+      border: 1px solid rgba(245, 208, 0, 0.35);
     }
     .profile-block {
       margin: 0.25rem 0 1rem;
@@ -223,9 +252,9 @@
     }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
     .primary {
-      background: var(--ink);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(15, 20, 25, 0.2);
+      background: var(--accent);
+      color: #0e0e10;
+      box-shadow: 0 4px 16px rgba(245, 208, 0, 0.25);
     }
     .secondary {
       background: var(--surface);
@@ -238,6 +267,15 @@
       color: var(--zone-red);
       border: 1px solid rgba(220, 38, 38, 0.3);
       font-weight: 600;
+    }
+    button.btn-icon {
+      width: 2.45rem;
+      height: 2.45rem;
+      margin-bottom: 0;
+      padding: 0;
+      border-radius: 12px;
+      letter-spacing: 0;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
     }
 
     .dots {
@@ -278,17 +316,26 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 45%, #fff 0%, var(--surface-2) 100%);
-      border: 6px solid var(--pulse);
+      background: radial-gradient(circle at 50% 45%, #2a2a32 0%, #141418 100%);
+      border: 6px solid var(--zone-blue);
       box-shadow: var(--shadow);
       margin-bottom: 0.5rem;
       transition: border-color 0.25s ease, transform 0.12s ease;
     }
     .bpm-ring.zone-blue { border-color: var(--zone-blue); }
-    .bpm-ring.zone-orange { border-color: var(--zone-orange); }
+    .bpm-ring.zone-green { border-color: var(--zone-green); }
+    .bpm-ring.zone-yellow { border-color: var(--zone-yellow); }
     .bpm-ring.zone-red { border-color: var(--zone-red); }
+    .bpm-ring.zone-black {
+      border-color: #b91c1c;
+      background: radial-gradient(circle at 50% 45%, #f87171 0%, #ef4444 100%);
+    }
+    .bpm-ring.zone-black .pct,
+    .bpm-ring.zone-black .pct-unit {
+      color: #0e0e10;
+    }
     .bpm-ring.beat { transform: scale(1.03); }
-    .bpm {
+    .pct {
       font-family: "Bebas Neue", sans-serif;
       font-size: clamp(4.5rem, 22vw, 5.5rem);
       font-weight: 400;
@@ -296,21 +343,29 @@
       color: var(--ink);
       letter-spacing: 0.02em;
     }
-    .bpm-unit {
+    .pct span {
+      font-size: 0.42em;
+      letter-spacing: 0.04em;
+      opacity: 0.85;
+      margin-left: 0.02em;
+      vertical-align: super;
+    }
+    .pct-unit {
       color: var(--muted);
       font-size: 0.72rem;
       letter-spacing: 0.22em;
       margin-top: 0.15rem;
       font-weight: 700;
+      text-transform: uppercase;
     }
-    .pct-line {
+    .bpm-line {
       margin-top: 1rem;
       font-family: "Bebas Neue", sans-serif;
       font-size: 2rem;
       letter-spacing: 0.04em;
       color: var(--muted);
     }
-    .pct-line strong { color: var(--ink); }
+    .bpm-line strong { color: var(--ink); }
     .fei-panel {
       margin-top: 0.85rem;
       padding: 0.75rem 0.9rem;
@@ -360,8 +415,9 @@
       gap: 0.45rem;
       padding: 0.5rem 1rem;
       border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
       font-size: 0.68rem;
       font-weight: 700;
       letter-spacing: 0.14em;
@@ -391,15 +447,23 @@
       border: 1px solid var(--border);
     }
     .status.ok { display: none; }
-    .status.warn { background: #fffbeb; border-color: rgba(180, 83, 9, 0.2); color: #92400e; }
-    .status.err { background: #fef2f2; border-color: rgba(220, 38, 38, 0.25); color: #991b1b; }
+    .status.warn {
+      background: rgba(251, 191, 36, 0.12);
+      border-color: rgba(251, 191, 36, 0.35);
+      color: #fde68a;
+    }
+    .status.err {
+      background: rgba(248, 113, 113, 0.12);
+      border-color: rgba(248, 113, 113, 0.35);
+      color: #fecaca;
+    }
 
     .confirm {
       margin: 0.75rem 0 1rem;
       padding: 1.1rem;
       border-radius: 16px;
-      background: #ecfdf5;
-      border: 1px solid rgba(22, 163, 74, 0.25);
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.3);
     }
     .confirm h2 {
       font-size: 0.95rem;
@@ -421,19 +485,11 @@
     }
     .confirm .row button { margin-bottom: 0; }
 
-    .live-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      margin-top: 0.35rem;
-    }
-    .live-actions button { margin-bottom: 0; }
-
     .disclaimer {
       margin-top: auto;
       padding-top: 0.85rem;
       font-size: 0.65rem;
-      color: #9ca3af;
+      color: #6b6b76;
       line-height: 1.35;
       text-align: center;
     }
@@ -454,7 +510,7 @@
     .drawer-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(15, 20, 25, 0.35);
+      background: rgba(0, 0, 0, 0.55);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.22s ease;
@@ -467,7 +523,7 @@
     .drawer {
       position: fixed;
       top: 0;
-      right: 0;
+      left: 0;
       width: min(100vw, 420px);
       height: 100%;
       height: 100dvh;
@@ -475,9 +531,9 @@
       z-index: 50;
       display: flex;
       flex-direction: column;
-      transform: translateX(105%);
+      transform: translateX(-105%);
       transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-      box-shadow: -12px 0 40px rgba(15, 20, 25, 0.15);
+      box-shadow: 12px 0 40px rgba(0, 0, 0, 0.5);
     }
     .drawer.open { transform: translateX(0); }
     .drawer-head {
@@ -550,7 +606,7 @@
       font: inherit;
       color: var(--text);
       margin-bottom: 0.55rem;
-      box-shadow: 0 2px 8px rgba(15, 20, 25, 0.04);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
     }
     .history-item:active { transform: scale(0.99); }
     .history-item .hi-title {
@@ -569,16 +625,25 @@
 
     .lesson-card {
       background: var(--surface);
-      border-radius: 20px;
+      border-radius: 18px;
       padding: 1rem 1rem 0.9rem;
       border: 1px solid var(--border);
-      box-shadow: 0 4px 20px rgba(15, 20, 25, 0.06);
-      border-left: 5px solid #cbd5e1;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      border-left: 4px solid #3f3f46;
     }
-    .lesson-card.zone-green { border-left-color: var(--pulse); }
     .lesson-card.zone-blue { border-left-color: var(--zone-blue); }
-    .lesson-card.zone-orange { border-left-color: var(--zone-orange); }
+    .lesson-card.zone-green { border-left-color: var(--zone-green); }
+    .lesson-card.zone-yellow { border-left-color: var(--zone-yellow); }
     .lesson-card.zone-red { border-left-color: var(--zone-red); }
+    .lesson-card.zone-black {
+      background: #ef4444;
+      border-color: rgba(0, 0, 0, 0.22);
+      border-left-color: #b91c1c;
+    }
+    .lesson-card.zone-black .name,
+    .lesson-card.zone-black .sub {
+      color: #0e0e10;
+    }
     .lesson-card .card-head {
       display: flex;
       align-items: flex-start;
@@ -606,8 +671,8 @@
       letter-spacing: 0.1em;
       padding: 0.28rem 0.5rem;
       border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
+      background: var(--accent);
+      color: #0e0e10;
     }
     .hr-chart-wrap {
       position: relative;
@@ -616,15 +681,60 @@
       overflow: hidden;
       background:
         linear-gradient(180deg,
-          rgba(220, 38, 38, 0.10) 0%,
-          rgba(234, 88, 12, 0.08) 35%,
-          rgba(2, 132, 199, 0.07) 65%,
-          rgba(22, 163, 74, 0.08) 100%);
+          rgba(248, 113, 113, 0.14) 0%,
+          rgba(251, 146, 60, 0.10) 35%,
+          rgba(56, 189, 248, 0.08) 65%,
+          rgba(74, 222, 128, 0.10) 100%),
+        #121216;
     }
+    .hr-chart-wrap.zoomable {
+      touch-action: none;
+      cursor: grab;
+    }
+    .hr-chart-wrap.zoomable.is-panning { cursor: grabbing; }
     .hr-chart {
       display: block;
       width: 100%;
       height: 140px;
+    }
+    .hr-chart-zoom {
+      position: absolute;
+      top: 0.4rem;
+      right: 0.4rem;
+      z-index: 2;
+      display: flex;
+      gap: 0.2rem;
+      padding: 0.15rem;
+      border-radius: 10px;
+      background: rgba(14, 14, 16, 0.72);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+    .hr-chart-zoom button {
+      width: 1.7rem;
+      height: 1.7rem;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .hr-chart-zoom button:hover { background: var(--hover); color: var(--accent); }
+    .hr-chart-zoom button:disabled {
+      opacity: 0.35;
+      cursor: default;
+      color: var(--muted);
+    }
+    .hr-chart-zoom button[data-zoom="reset"] {
+      width: auto;
+      min-width: 1.7rem;
+      padding: 0 0.35rem;
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
     }
     .hr-chart-legend {
       display: flex;
@@ -648,8 +758,8 @@
       margin-right: 0.28rem;
       vertical-align: middle;
     }
-    .hr-chart-legend .leg-ref::before { background: #94a3b8; }
-    .hr-chart-legend .leg-now::before { background: #0f1419; }
+    .hr-chart-legend .leg-ref::before { background: #71717a; }
+    .hr-chart-legend .leg-now::before { background: var(--chart-now); }
     .summary-empty {
       min-height: 140px;
       display: flex;
@@ -698,7 +808,7 @@
       height: 5px;
       border-radius: 999px;
       overflow: hidden;
-      background: #e5e7eb;
+      background: #2a2a32;
       margin-top: 0.35rem;
     }
     .zone-bars i {
@@ -706,17 +816,26 @@
       height: 100%;
       min-width: 0;
     }
-    .zone-bars .z-green { background: var(--pulse); }
     .zone-bars .z-blue { background: var(--zone-blue); }
-    .zone-bars .z-orange { background: var(--zone-orange); }
+    .zone-bars .z-green { background: var(--zone-green); }
+    .zone-bars .z-yellow { background: var(--zone-yellow); }
     .zone-bars .z-red { background: var(--zone-red); }
+    .zone-bars .z-black { background: #ef4444; }
   </style>
 </head>
 <body>
   <div class="brand-bar">
-    <div class="brand">HR<span>cast</span></div>
-    <button type="button" class="btn-menu" id="btnHistory" aria-expanded="false" aria-controls="historyDrawer">
-      Allenamenti
+    <div class="brand-left">
+      <button type="button" class="btn-icon" id="btnMenu" aria-label="Allenamenti" aria-expanded="false" aria-controls="historyDrawer">
+        <span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span>
+      </button>
+      <div class="brand">HR<span>cast</span></div>
+    </div>
+    <button type="button" class="btn-icon" id="btnSettings" aria-label="Impostazioni" title="Impostazioni">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
     </button>
   </div>
 
@@ -731,8 +850,6 @@
 
     <div class="profile-block">
       <p class="block-title">HypeRate</p>
-      <label class="field" for="hyperateToken">Token API</label>
-      <input id="hyperateToken" type="password" autocomplete="off" maxlength="256" placeholder="Incolla il token API" spellcheck="false" />
       <label class="field" for="hyperateId">ID sessione (Watch)</label>
       <input id="hyperateId" type="text" placeholder="Es. xQc7L oppure internal-testing" autocomplete="off" maxlength="32" spellcheck="false" />
 
@@ -772,7 +889,7 @@
         <div class="span-2">
           <label class="field" for="maxHr">FC massima</label>
           <div class="estimate-row">
-            <input id="maxHr" type="number" inputmode="numeric" min="100" max="230" step="1" placeholder="es. 185" />
+            <input id="maxHr" type="number" inputmode="numeric" min="50" max="230" step="1" placeholder="es. 185" />
             <button type="button" class="ghost" id="estimateMaxBtn" title="Formula Tanaka da età">Stima</button>
           </div>
           <p class="field-hint" id="maxHint"></p>
@@ -794,11 +911,12 @@
   <div id="session" class="hidden">
     <div class="dots">
       <span class="dot" id="dotServer">Server</span>
-      <span class="dot" id="dotHr">Device</span>
+      <span class="dot" id="dotHr">Flusso-HR</span>
     </div>
 
     <div id="connectPanel" class="sheet hidden">
-      <p class="panel-lead">Collega cardio</p>
+      <p class="panel-lead">Impostazioni</p>
+      <p class="field-hint" style="margin-top:-0.55rem;margin-bottom:1rem;">Collega cardio e gestisci il profilo</p>
       <label class="field" for="hyperateIdConnect">HypeRate ID</label>
       <input id="hyperateIdConnect" type="text" placeholder="ID dall’app Watch" autocomplete="off" maxlength="32" spellcheck="false" />
       <div class="connect-actions">
@@ -814,16 +932,18 @@
           <button class="secondary" id="confirmChangeBtn" type="button">Cambia</button>
         </div>
       </div>
+      <button class="secondary" id="editProfileBtn" type="button">Modifica profilo</button>
+      <button class="secondary" id="backToLiveBtn" type="button">Torna al live</button>
     </div>
 
     <div id="livePanel">
       <div class="live-card">
         <div class="live-stage">
           <div class="bpm-ring" id="bpmRing">
-            <div class="bpm" id="bpmEl">--</div>
-            <div class="bpm-unit">BPM</div>
+            <div class="pct" id="pctEl">—<span>%</span></div>
+            <div class="pct-unit">Intensità</div>
           </div>
-          <div class="pct-line" id="pctLine"><strong>—</strong> % intensità</div>
+          <div class="bpm-line" id="bpmLine"><strong>--</strong> BPM</div>
           <div class="kcal-line" id="kcalLine">Calorie: <strong>—</strong></div>
           <div class="fei-panel hidden" id="feiPanel">
             <div class="fei-title">FrancoEffortIndex</div>
@@ -833,15 +953,10 @@
           </div>
           <div class="session-badge">Live</div>
         </div>
-        <div class="live-actions">
-          <button class="secondary" id="showConnectBtn" type="button">Device</button>
-          <button class="danger" id="stopBtn" type="button">Esci</button>
-        </div>
       </div>
     </div>
 
     <div class="status warn hidden" id="statusEl"></div>
-    <button class="secondary hidden" id="editProfileBtn" type="button">Modifica profilo</button>
   </div>
 
   <p class="disclaimer">Uso sperimentale / ricerca — non clinico.</p>
@@ -869,7 +984,6 @@
     const HR_MEASUREMENT = 0x2a37;
     const STREAM_STALE_MS = 5000;
     const PROFILE_KEY = 'woc-profile';
-    const HYPERATE_TOKEN_KEY = 'woc-hyperate-token';
     const CONSENT_KEY = 'woc-consent';
     const M = window.WocMetrics;
     const params = new URLSearchParams(location.search);
@@ -880,7 +994,8 @@
     const connectPanel = document.getElementById('connectPanel');
     const livePanel = document.getElementById('livePanel');
     const bootMsg = document.getElementById('bootMsg');
-    const btnHistory = document.getElementById('btnHistory');
+    const btnMenu = document.getElementById('btnMenu');
+    const btnSettings = document.getElementById('btnSettings');
     const btnCloseHistory = document.getElementById('btnCloseHistory');
     const btnHistoryBack = document.getElementById('btnHistoryBack');
     const historyDrawer = document.getElementById('historyDrawer');
@@ -903,18 +1018,16 @@
     const estimateMaxBtn = document.getElementById('estimateMaxBtn');
     const hyperateIdEl = document.getElementById('hyperateId');
     const hyperateIdConnectEl = document.getElementById('hyperateIdConnect');
-    const hyperateTokenEl = document.getElementById('hyperateToken');
     const consentEl = document.getElementById('consent');
     const startBtn = document.getElementById('startBtn');
     const connectHrBtn = document.getElementById('connectHrBtn');
     const connectBtn = document.getElementById('connectBtn');
     const reconnectBtn = document.getElementById('reconnectBtn');
-    const showConnectBtn = document.getElementById('showConnectBtn');
     const editProfileBtn = document.getElementById('editProfileBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const bpmEl = document.getElementById('bpmEl');
+    const backToLiveBtn = document.getElementById('backToLiveBtn');
+    const pctEl = document.getElementById('pctEl');
     const bpmRing = document.getElementById('bpmRing');
-    const pctLine = document.getElementById('pctLine');
+    const bpmLine = document.getElementById('bpmLine');
     const kcalLine = document.getElementById('kcalLine');
     const feiPanel = document.getElementById('feiPanel');
     const feiValue = document.getElementById('feiValue');
@@ -940,11 +1053,12 @@
       hyperateIdEl.value = savedHrId;
       hyperateIdConnectEl.value = savedHrId;
     }
-    const savedHrToken = localStorage.getItem(HYPERATE_TOKEN_KEY);
-    if (savedHrToken) hyperateTokenEl.value = savedHrToken;
+    try {
+      localStorage.removeItem('woc-hyperate-token');
+    } catch (_) {}
     if (localStorage.getItem(CONSENT_KEY) === '1') {
       consentEl.checked = true;
-    } else if (savedName && savedHrToken && savedHrId) {
+    } else if (savedName && savedHrId) {
       // Utenti già profilati prima della chiave consenso
       consentEl.checked = true;
       localStorage.setItem(CONSENT_KEY, '1');
@@ -1062,20 +1176,32 @@
       if (n === 2) {
         connectPanel.classList.remove('hidden');
         livePanel.classList.add('hidden');
-        editProfileBtn.classList.remove('hidden');
         syncHrIdFields(false);
       } else {
         connectPanel.classList.add('hidden');
         livePanel.classList.remove('hidden');
-        editProfileBtn.classList.add('hidden');
       }
+    }
+
+    function openSettings() {
+      if (sessionActive && uiStep === 2) {
+        goLiveNow();
+        return;
+      }
+      holdAwayFromLive = true;
+      if (!sessionActive) {
+        setStep(1);
+        setStatus('');
+        return;
+      }
+      setStep(2);
+      setStatus('');
     }
 
     function canAutoLive() {
       return Boolean(
         consentEl.checked &&
         nameEl.value.trim() &&
-        hyperateTokenEl.value.trim() &&
         hyperateIdEl.value.trim()
       );
     }
@@ -1086,10 +1212,11 @@
 
     function zoneClass(pct) {
       if (pct == null) return '';
-      if (pct < 70) return '';
-      if (pct < 80) return 'zone-blue';
-      if (pct < 90) return 'zone-orange';
-      return 'zone-red';
+      if (pct < 70) return 'zone-blue';
+      if (pct < 80) return 'zone-green';
+      if (pct < 90) return 'zone-yellow';
+      if (pct <= 96) return 'zone-red';
+      return 'zone-black';
     }
 
     function accumulateKcal(bpm, at) {
@@ -1159,22 +1286,33 @@
 
     function paintBpm(bpm, opts = {}) {
       const at = Date.now();
-      bpmEl.textContent = String(bpm);
-      const pct = intensityPct(bpm);
+      // Se arriva dal server (HypeRate), usa quel % così mobile e dashboard coincidono.
+      const pct =
+        opts.intensityPct != null && Number.isFinite(Number(opts.intensityPct))
+          ? Math.min(100, Math.max(0, Math.round(Number(opts.intensityPct))))
+          : intensityPct(bpm);
       const rate = opts.skipKcalAccumulate
         ? M.kcalPerMinute(bpm, currentProfile())
         : accumulateKcal(bpm, at);
 
+      if (pctEl) {
+        pctEl.innerHTML = pct != null
+          ? `${pct}<span>%</span>`
+          : `—<span>%</span>`;
+      }
+      if (bpmLine) {
+        bpmLine.innerHTML = bpm != null
+          ? `<strong>${bpm}</strong> BPM`
+          : `<strong>--</strong> BPM`;
+      }
+
       if (bpmRing) {
-        bpmRing.classList.remove('zone-blue', 'zone-orange', 'zone-red');
+        bpmRing.classList.remove('zone-blue', 'zone-green', 'zone-yellow', 'zone-red', 'zone-black');
         const z = zoneClass(pct);
         if (z) bpmRing.classList.add(z);
         bpmRing.classList.add('beat');
         setTimeout(() => bpmRing.classList.remove('beat'), 120);
       }
-      pctLine.innerHTML = pct != null
-        ? `<strong>${pct}</strong> % intensità`
-        : `<strong>—</strong> % intensità`;
 
       if (rate != null || sessionKcal > 0) {
         kcalLine.innerHTML = `Calorie: <strong>${Math.round(sessionKcal)}</strong> kcal` +
@@ -1247,16 +1385,6 @@
         profileNote.style.display = 'none';
       }, 4000);
     }
-
-    hyperateTokenEl.addEventListener('change', () => {
-      const t = hyperateTokenEl.value.trim();
-      if (t) localStorage.setItem(HYPERATE_TOKEN_KEY, t);
-      else localStorage.removeItem(HYPERATE_TOKEN_KEY);
-    });
-    hyperateTokenEl.addEventListener('input', () => {
-      const t = hyperateTokenEl.value.trim();
-      if (t) localStorage.setItem(HYPERATE_TOKEN_KEY, t);
-    });
 
     estimateMaxBtn.addEventListener('click', () => {
       const age = Number(ageEl.value);
@@ -1480,7 +1608,10 @@
             sessionKcal = Number(payload.kcalSession);
             lastKcalAt = lastBpmAt;
           }
-          paintBpm(bpm, { skipKcalAccumulate: true });
+          paintBpm(bpm, {
+            skipKcalAccumulate: true,
+            intensityPct: payload.intensityPct
+          });
           setDot(dotHr, true);
           setDot(dotServer, true);
           setStatus('');
@@ -1604,9 +1735,9 @@
         deviceConfirmed = false;
         lastBpm = null;
         lastBpmAt = 0;
-        bpmEl.textContent = '--';
-        bpmRing?.classList.remove('zone-blue', 'zone-orange', 'zone-red', 'beat');
-        pctLine.innerHTML = `<strong>—</strong> % intensità`;
+        if (pctEl) pctEl.innerHTML = `—<span>%</span>`;
+        if (bpmLine) bpmLine.innerHTML = `<strong>--</strong> BPM`;
+        bpmRing?.classList.remove('zone-blue', 'zone-green', 'zone-yellow', 'zone-red', 'zone-black', 'beat');
         kcalLine.innerHTML = 'Calorie: <strong>—</strong>';
         setDot(dotHr, false);
       }
@@ -1618,13 +1749,6 @@
       const idFromSetup = hyperateIdEl.value.trim().replace(/^hr:/i, '');
       const idFromConnect = hyperateIdConnectEl.value.trim().replace(/^hr:/i, '');
       const hrId = idFromSetup || idFromConnect;
-      const hrToken = hyperateTokenEl.value.trim();
-      if (!hrToken) {
-        setStatus('Inserisci il token API HypeRate nel profilo.', 'err');
-        setStep(1);
-        hyperateTokenEl.focus();
-        return;
-      }
       if (!hrId) {
         setStatus('Inserisci il HypeRate ID.', 'err');
         setStep(2);
@@ -1633,7 +1757,6 @@
       }
       hyperateIdEl.value = hrId;
       hyperateIdConnectEl.value = hrId;
-      localStorage.setItem(HYPERATE_TOKEN_KEY, hrToken);
       localStorage.setItem('woc-hyperate-id', hrId);
       sourceMode = 'hyperate';
       deviceName = `HypeRate ${hrId}`;
@@ -1649,7 +1772,6 @@
       const body = {
         participantId,
         hyperateId: hrId,
-        hyperateToken: hrToken,
         name: nameEl.value.trim(),
         room,
         profile: currentProfile()
@@ -1759,9 +1881,9 @@
       lastBpmAt = 0;
       sessionKcal = 0;
       lastKcalAt = 0;
-      bpmEl.textContent = '--';
-      bpmRing?.classList.remove('zone-blue', 'zone-orange', 'zone-red', 'beat');
-      pctLine.innerHTML = `<strong>—</strong> % intensità`;
+      if (pctEl) pctEl.innerHTML = `—<span>%</span>`;
+      if (bpmLine) bpmLine.innerHTML = `<strong>--</strong> BPM`;
+      bpmRing?.classList.remove('zone-blue', 'zone-green', 'zone-yellow', 'zone-red', 'zone-black', 'beat');
       kcalLine.innerHTML = 'Calorie: <strong>—</strong>';
       hideFeiPanel();
       setDot(dotServer, false);
@@ -1777,8 +1899,7 @@
       startStreamWatch();
       requestWakeLock();
       const hrId = hyperateIdEl.value.trim();
-      const hrToken = hyperateTokenEl.value.trim();
-      if (hrId && hrToken) {
+      if (hrId) {
         if (preferLive) goLiveNow();
         else setStep(2);
         connectHyperate();
@@ -1795,8 +1916,6 @@
       localStorage.setItem('woc-name', name);
       localStorage.setItem(CONSENT_KEY, '1');
       const profile = saveProfileToStorage();
-      const hrToken = hyperateTokenEl.value.trim();
-      if (hrToken) localStorage.setItem(HYPERATE_TOKEN_KEY, hrToken);
       const hrId = hyperateIdEl.value.trim();
       if (hrId) localStorage.setItem('woc-hyperate-id', hrId);
       sessionKcal = 0;
@@ -1824,14 +1943,14 @@
     startBtn.addEventListener('click', () => beginSession());
     connectHrBtn.addEventListener('click', connectHyperate);
     connectBtn.addEventListener('click', connectBle);
-    showConnectBtn.addEventListener('click', () => {
-      holdAwayFromLive = true;
-      setStep(2);
-    });
+    btnSettings.addEventListener('click', openSettings);
     editProfileBtn.addEventListener('click', () => {
       holdAwayFromLive = true;
       setStep(1);
       setStatus('');
+    });
+    backToLiveBtn.addEventListener('click', () => {
+      if (sessionActive) goLiveNow();
     });
 
     reconnectBtn.addEventListener('click', async () => {
@@ -1868,11 +1987,15 @@
       await connectBle();
     });
 
-    stopBtn.addEventListener('click', disconnectAll);
-
     // ——— Storico lezioni del partecipante ———
     let historyOpen = false;
     let historyView = 'list'; // list | detail
+    let lessonChartView = { start: 0, end: 1 };
+    let lessonChartSummary = null;
+    let lessonChartRef = null;
+    const LESSON_ZOOM_MIN = 0.06;
+    let lessonChartPan = null;
+    let lessonChartPinch = null;
 
     function formatDuration(ms) {
       const sec = Math.max(0, Math.floor(ms / 1000));
@@ -1902,18 +2025,20 @@
 
     function zoneFromPct(pct) {
       if (pct == null) return 'off';
-      if (pct < 70) return 'green';
-      if (pct < 80) return 'blue';
-      if (pct < 90) return 'orange';
-      return 'red';
+      if (pct < 70) return 'blue';
+      if (pct < 80) return 'green';
+      if (pct < 90) return 'yellow';
+      if (pct <= 96) return 'red';
+      return 'black';
     }
 
     function zoneColor(zone) {
-      if (zone === 'green') return '#16a34a';
-      if (zone === 'blue') return '#0284c7';
-      if (zone === 'orange') return '#ea580c';
-      if (zone === 'red') return '#dc2626';
-      return '#9ca3af';
+      if (zone === 'blue') return getComputedStyle(document.documentElement).getPropertyValue('--zone-blue').trim() || '#38bdf8';
+      if (zone === 'green') return getComputedStyle(document.documentElement).getPropertyValue('--zone-green').trim() || '#4ade80';
+      if (zone === 'yellow') return getComputedStyle(document.documentElement).getPropertyValue('--zone-yellow').trim() || '#facc15';
+      if (zone === 'red') return getComputedStyle(document.documentElement).getPropertyValue('--zone-red').trim() || '#f87171';
+      if (zone === 'black') return '#a1a1aa';
+      return '#71717a';
     }
 
     function samplePct(sample, profile) {
@@ -1945,7 +2070,7 @@
       const t0 = workout.startedAt || samples[0].t;
       const t1 = workout.endedAt || samples[samples.length - 1].t;
       const durationMs = Math.max(0, (t1 || 0) - (t0 || 0));
-      const zoneMs = { green: 0, blue: 0, orange: 0, red: 0 };
+      const zoneMs = { blue: 0, green: 0, yellow: 0, red: 0, black: 0 };
       for (let i = 0; i < samples.length; i++) {
         const cur = samples[i];
         const next = samples[i + 1];
@@ -1953,10 +2078,10 @@
         const z = zoneFromPct(samplePct(cur, profile));
         if (z !== 'off') zoneMs[z] += dt;
       }
-      const totalZone = zoneMs.green + zoneMs.blue + zoneMs.orange + zoneMs.red;
-      let dominant = 'green';
+      const totalZone = zoneMs.blue + zoneMs.green + zoneMs.yellow + zoneMs.red + zoneMs.black;
+      let dominant = 'blue';
       let dominantMs = -1;
-      for (const z of ['green', 'blue', 'orange', 'red']) {
+      for (const z of ['blue', 'green', 'yellow', 'red', 'black']) {
         if (zoneMs[z] > dominantMs) {
           dominantMs = zoneMs[z];
           dominant = z;
@@ -1976,12 +2101,13 @@
         durationMs,
         zoneShare: totalZone
           ? {
-              green: zoneMs.green / totalZone,
               blue: zoneMs.blue / totalZone,
-              orange: zoneMs.orange / totalZone,
-              red: zoneMs.red / totalZone
+              green: zoneMs.green / totalZone,
+              yellow: zoneMs.yellow / totalZone,
+              red: zoneMs.red / totalZone,
+              black: zoneMs.black / totalZone
             }
-          : { green: 0, blue: 0, orange: 0, red: 0 },
+          : { blue: 0, green: 0, yellow: 0, red: 0, black: 0 },
         dominant,
         kcal,
         profile
@@ -2040,7 +2166,39 @@
       }
     }
 
-    function drawHrChart(canvas, summary, refOverlay) {
+    function clampChartView(view) {
+      let start = Number.isFinite(view && view.start) ? view.start : 0;
+      let end = Number.isFinite(view && view.end) ? view.end : 1;
+      if (end < start) {
+        const tmp = start;
+        start = end;
+        end = tmp;
+      }
+      let span = end - start;
+      if (span < LESSON_ZOOM_MIN) {
+        const mid = (start + end) / 2;
+        start = mid - LESSON_ZOOM_MIN / 2;
+        end = mid + LESSON_ZOOM_MIN / 2;
+        span = LESSON_ZOOM_MIN;
+      }
+      if (span > 1) {
+        start = 0;
+        end = 1;
+      } else {
+        if (start < 0) {
+          end -= start;
+          start = 0;
+        }
+        if (end > 1) {
+          start -= end - 1;
+          end = 1;
+        }
+        if (start < 0) start = 0;
+      }
+      return { start, end };
+    }
+
+    function drawHrChart(canvas, summary, refOverlay, view) {
       if (!canvas || !summary || summary.empty || !summary.samples.length) return;
       const compare = Boolean(refOverlay && refOverlay.samples && refOverlay.samples.length);
       let samples = samplesAsElapsed(
@@ -2063,6 +2221,11 @@
       }
       if (!samples.length) return;
 
+      const win = clampChartView(view || { start: 0, end: 1 });
+      const t0 = win.start * spanT;
+      const t1 = win.end * spanT;
+      const spanView = Math.max(1e-6, t1 - t0);
+
       const rect = canvas.getBoundingClientRect();
       const cssW = Math.max(200, Math.floor(rect.width) || 280);
       const cssH = Math.max(120, Math.floor(rect.height) || 140);
@@ -2080,7 +2243,10 @@
       const padY = 8;
       const w = cssW - padX * 2;
       const h = cssH - padY * 2;
-      const bpms = samples.map((s) => s.bpm).concat(refSamples.map((s) => s.bpm));
+      const inView = (list) =>
+        list.filter((s) => s.t >= t0 - spanView * 0.02 && s.t <= t1 + spanView * 0.02);
+      const visible = inView(samples).concat(inView(refSamples));
+      const bpms = (visible.length ? visible : samples.concat(refSamples)).map((s) => s.bpm);
       let minB = Math.min(...bpms);
       let maxB = Math.max(...bpms);
       if (maxB - minB < 20) {
@@ -2091,9 +2257,14 @@
       minB = Math.max(40, minB - 8);
       maxB = maxB + 8;
       const spanB = Math.max(1, maxB - minB);
-      const xAt = (t) => padX + (Math.max(0, Math.min(spanT, t)) / spanT) * w;
+      const xAt = (t) => padX + ((t - t0) / spanView) * w;
       const yAt = (bpm) => padY + h - ((bpm - minB) / spanB) * h;
       const base = padY + h;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(padX, 0, w, cssH);
+      ctx.clip();
 
       if (refSamples.length >= 2) {
         ctx.beginPath();
@@ -2103,11 +2274,11 @@
         }
         ctx.lineTo(xAt(refSamples[refSamples.length - 1].t), base);
         ctx.closePath();
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.28)';
+        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
         ctx.fill();
 
         drawPolyline(ctx, refSamples, xAt, yAt);
-        ctx.strokeStyle = '#94a3b8';
+        ctx.strokeStyle = '#71717a';
         ctx.lineWidth = 1.75;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
@@ -2117,6 +2288,7 @@
       for (let i = 0; i < samples.length - 1; i++) {
         const a = samples[i];
         const b = samples[i + 1];
+        if (b.t < t0 || a.t > t1) continue;
         const z = zoneFromPct(samplePct(a, summary.profile));
         const x0 = xAt(a.t);
         const x1 = xAt(b.t);
@@ -2129,16 +2301,171 @@
         ctx.lineTo(x1, base);
         ctx.closePath();
         ctx.fillStyle = zoneColor(z);
-        ctx.globalAlpha = 0.35;
+        ctx.globalAlpha = 0.4;
         ctx.fill();
         ctx.globalAlpha = 1;
       }
       drawPolyline(ctx, samples, xAt, yAt);
-      ctx.strokeStyle = '#0f1419';
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--chart-now').trim() || '#f5d000';
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.stroke();
+      ctx.restore();
+    }
+
+    function updateLessonZoomButtons() {
+      const tools = historyDetail.querySelector('.hr-chart-zoom');
+      if (!tools) return;
+      const span = lessonChartView.end - lessonChartView.start;
+      const btnIn = tools.querySelector('[data-zoom="in"]');
+      const btnOut = tools.querySelector('[data-zoom="out"]');
+      const btnReset = tools.querySelector('[data-zoom="reset"]');
+      if (btnIn) btnIn.disabled = span <= LESSON_ZOOM_MIN + 1e-6;
+      if (btnOut) btnOut.disabled = span >= 1 - 1e-6;
+      if (btnReset) btnReset.disabled = span >= 1 - 1e-6;
+    }
+
+    function redrawLessonChart() {
+      if (!lessonChartSummary || lessonChartSummary.empty) return;
+      const canvas = historyDetail.querySelector('.hr-chart');
+      if (!canvas) return;
+      drawHrChart(canvas, lessonChartSummary, lessonChartRef, lessonChartView);
+      updateLessonZoomButtons();
+    }
+
+    function setLessonChartView(next) {
+      lessonChartView = clampChartView(next);
+      redrawLessonChart();
+    }
+
+    function zoomLessonChart(factor, focusFrac) {
+      const span = lessonChartView.end - lessonChartView.start;
+      const nextSpan = Math.max(LESSON_ZOOM_MIN, Math.min(1, span * factor));
+      const f = Number.isFinite(focusFrac)
+        ? focusFrac
+        : (lessonChartView.start + lessonChartView.end) / 2;
+      const start = f - nextSpan * ((f - lessonChartView.start) / Math.max(1e-9, span));
+      setLessonChartView({ start, end: start + nextSpan });
+    }
+
+    function bindLessonChartZoom(wrap) {
+      if (!wrap) return;
+      const canvas = wrap.querySelector('.hr-chart');
+      const tools = wrap.querySelector('.hr-chart-zoom');
+      if (!canvas) return;
+
+      if (tools) {
+        tools.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-zoom]');
+          if (!btn) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const action = btn.getAttribute('data-zoom');
+          if (action === 'in') zoomLessonChart(1 / 1.35);
+          else if (action === 'out') zoomLessonChart(1.35);
+          else if (action === 'reset') setLessonChartView({ start: 0, end: 1 });
+        });
+      }
+
+      wrap.addEventListener(
+        'wheel',
+        (e) => {
+          e.preventDefault();
+          const rect = canvas.getBoundingClientRect();
+          const xFrac = rect.width ? (e.clientX - rect.left) / rect.width : 0.5;
+          const focus =
+            lessonChartView.start +
+            Math.max(0, Math.min(1, xFrac)) *
+              (lessonChartView.end - lessonChartView.start);
+          zoomLessonChart(e.deltaY > 0 ? 1.18 : 1 / 1.18, focus);
+        },
+        { passive: false }
+      );
+
+      wrap.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.hr-chart-zoom')) return;
+        wrap.setPointerCapture(e.pointerId);
+        lessonChartPan = {
+          id: e.pointerId,
+          x: e.clientX,
+          start: lessonChartView.start,
+          end: lessonChartView.end
+        };
+        wrap.classList.add('is-panning');
+      });
+
+      wrap.addEventListener('pointermove', (e) => {
+        if (lessonChartPinch) return;
+        if (!lessonChartPan || lessonChartPan.id !== e.pointerId) return;
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width) return;
+        const span = lessonChartPan.end - lessonChartPan.start;
+        const dx = (e.clientX - lessonChartPan.x) / rect.width;
+        setLessonChartView({
+          start: lessonChartPan.start - dx * span,
+          end: lessonChartPan.end - dx * span
+        });
+      });
+
+      const endPan = (e) => {
+        if (lessonChartPan && lessonChartPan.id === e.pointerId) {
+          lessonChartPan = null;
+          wrap.classList.remove('is-panning');
+        }
+      };
+      wrap.addEventListener('pointerup', endPan);
+      wrap.addEventListener('pointercancel', endPan);
+
+      wrap.addEventListener(
+        'touchstart',
+        (e) => {
+          if (e.touches.length === 2) {
+            lessonChartPan = null;
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const rect = canvas.getBoundingClientRect();
+            const xFrac = rect.width ? (midX - rect.left) / rect.width : 0.5;
+            lessonChartPinch = {
+              dist: Math.hypot(dx, dy) || 1,
+              start: lessonChartView.start,
+              end: lessonChartView.end,
+              focus:
+                lessonChartView.start +
+                Math.max(0, Math.min(1, xFrac)) *
+                  (lessonChartView.end - lessonChartView.start)
+            };
+          }
+        },
+        { passive: true }
+      );
+
+      wrap.addEventListener(
+        'touchmove',
+        (e) => {
+          if (!lessonChartPinch || e.touches.length !== 2) return;
+          e.preventDefault();
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const dist = Math.hypot(dx, dy) || 1;
+          const factor = lessonChartPinch.dist / dist;
+          const span0 = lessonChartPinch.end - lessonChartPinch.start;
+          const nextSpan = Math.max(LESSON_ZOOM_MIN, Math.min(1, span0 * factor));
+          const f = lessonChartPinch.focus;
+          const start = f - nextSpan * ((f - lessonChartPinch.start) / Math.max(1e-9, span0));
+          setLessonChartView({ start, end: start + nextSpan });
+        },
+        { passive: false }
+      );
+
+      wrap.addEventListener(
+        'touchend',
+        (e) => {
+          if (e.touches.length < 2) lessonChartPinch = null;
+        },
+        { passive: true }
+      );
     }
 
     function showHistoryList() {
@@ -2149,6 +2476,11 @@
       btnHistoryBack.classList.add('hidden');
       historyTitle.textContent = 'Allenamenti';
       historySub.textContent = 'I tuoi allenamenti';
+      lessonChartView = { start: 0, end: 1 };
+      lessonChartSummary = null;
+      lessonChartRef = null;
+      lessonChartPan = null;
+      lessonChartPinch = null;
     }
 
     function renderHistoryList(workouts) {
@@ -2236,7 +2568,14 @@
             ${
               summary.empty
                 ? '<div class="summary-empty">Nessun dato HR</div>'
-                : `<div class="hr-chart-wrap"><canvas class="hr-chart" aria-label="Grafico battito"></canvas></div>
+                : `<div class="hr-chart-wrap zoomable">
+                     <canvas class="hr-chart" aria-label="Grafico battito"></canvas>
+                     <div class="hr-chart-zoom" role="group" aria-label="Zoom grafico">
+                       <button type="button" data-zoom="out" aria-label="Riduci zoom" title="Riduci zoom">−</button>
+                       <button type="button" data-zoom="reset" aria-label="Reimposta zoom" title="Reimposta" disabled>1:1</button>
+                       <button type="button" data-zoom="in" aria-label="Ingrandisci" title="Ingrandisci">+</button>
+                     </div>
+                   </div>
                    <div class="hr-chart-legend hidden" id="lessonChartLegend" aria-hidden="true">
                      <span class="leg-ref">rif.</span>
                      <span class="leg-now">ora</span>
@@ -2318,7 +2657,7 @@
           if (meta) meta.textContent = parts.join(' · ');
           const bars = historyDetail.querySelector('#lessonZones');
           if (bars) {
-            for (const z of ['green', 'blue', 'orange', 'red']) {
+            for (const z of ['blue', 'green', 'yellow', 'red', 'black']) {
               const share = summary.zoneShare[z] || 0;
               if (share < 0.005) continue;
               const i = document.createElement('i');
@@ -2329,9 +2668,14 @@
           }
           const legend = historyDetail.querySelector('#lessonChartLegend');
           if (legend) legend.classList.toggle('hidden', !refOverlay);
-          const canvas = historyDetail.querySelector('.hr-chart');
+          lessonChartView = { start: 0, end: 1 };
+          lessonChartSummary = summary;
+          lessonChartRef = refOverlay;
+          lessonChartPan = null;
+          lessonChartPinch = null;
+          bindLessonChartZoom(historyDetail.querySelector('.hr-chart-wrap'));
           requestAnimationFrame(() => {
-            requestAnimationFrame(() => drawHrChart(canvas, summary, refOverlay));
+            requestAnimationFrame(() => redrawLessonChart());
           });
         }
       } catch (err) {
@@ -2345,7 +2689,7 @@
       historyDrawer.setAttribute('aria-hidden', 'false');
       drawerBackdrop.hidden = false;
       requestAnimationFrame(() => drawerBackdrop.classList.add('open'));
-      btnHistory.setAttribute('aria-expanded', 'true');
+      btnMenu.setAttribute('aria-expanded', 'true');
       loadMyHistory();
     }
 
@@ -2354,14 +2698,14 @@
       historyDrawer.classList.remove('open');
       historyDrawer.setAttribute('aria-hidden', 'true');
       drawerBackdrop.classList.remove('open');
-      btnHistory.setAttribute('aria-expanded', 'false');
+      btnMenu.setAttribute('aria-expanded', 'false');
       setTimeout(() => {
         if (!historyOpen) drawerBackdrop.hidden = true;
       }, 250);
       showHistoryList();
     }
 
-    btnHistory.addEventListener('click', () => {
+    btnMenu.addEventListener('click', () => {
       if (historyOpen) closeHistory();
       else openHistory();
     });
