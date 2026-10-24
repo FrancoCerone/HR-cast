@@ -2142,17 +2142,11 @@
       return out;
     }
 
-    function samplesAsUnitSpan(samples) {
+    /** Ultimo elapsed (ms) di una serie già normalizzata. */
+    function seriesEndMs(samples) {
       const list = Array.isArray(samples) ? samples : [];
-      if (!list.length) return [];
-      const t0 = list[0].t;
-      const t1 = list[list.length - 1].t;
-      const span = Math.max(1, t1 - t0);
-      return list.map((s) => ({
-        t: (s.t - t0) / span,
-        bpm: s.bpm,
-        intensityPct: s.intensityPct
-      }));
+      if (!list.length) return 0;
+      return Math.max(0, Number(list[list.length - 1].t) || 0);
     }
 
     function drawPolyline(ctx, samples, xAt, yAt) {
@@ -2201,25 +2195,20 @@
     function drawHrChart(canvas, summary, refOverlay, view) {
       if (!canvas || !summary || summary.empty || !summary.samples.length) return;
       const compare = Boolean(refOverlay && refOverlay.samples && refOverlay.samples.length);
-      let samples = samplesAsElapsed(
+      // Confronta: stessa scala temporale assoluta (ms), non normalizzata a 0→1
+      const samples = samplesAsElapsed(
         summary.samples,
         summary.startedAt,
         compare ? 'first' : 'workout'
       );
       if (!samples.length) return;
-      let refSamples = compare
+      const refSamples = compare
         ? samplesAsElapsed(refOverlay.samples, refOverlay.startedAt, 'first')
         : [];
 
-      let spanT;
-      if (compare) {
-        samples = samplesAsUnitSpan(samples);
-        refSamples = samplesAsUnitSpan(refSamples);
-        spanT = 1;
-      } else {
-        spanT = Math.max(1, samples[samples.length - 1].t);
-      }
-      if (!samples.length) return;
+      const spanT = compare
+        ? Math.max(1, seriesEndMs(samples), seriesEndMs(refSamples))
+        : Math.max(1, seriesEndMs(samples));
 
       const win = clampChartView(view || { start: 0, end: 1 });
       const t0 = win.start * spanT;

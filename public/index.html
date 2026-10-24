@@ -25,6 +25,12 @@
       --zone-orange: #fb923c;
       --zone-red: #f87171;
       --zone-black: #e4e4e7;
+      /* Fill card live = palette soglia dell’altra app (proiezione) */
+      --zone-fill-blue: #0d3156;
+      --zone-fill-green: #454b1e;
+      --zone-fill-yellow: #5c4e14;
+      --zone-fill-red: #43131f;
+      --zone-fill-black: #43131f;
       --border: rgba(255, 255, 255, 0.08);
       --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
       --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.35);
@@ -465,42 +471,169 @@
       display: flex;
       flex-direction: column;
     }
-    .card.zone-blue { border-left-color: var(--zone-blue); }
-    .card.zone-green { border-left-color: var(--zone-green); }
-    .card.zone-yellow { border-left-color: var(--zone-yellow); }
-    .card.zone-red { border-left-color: var(--zone-red); }
-    /* Z5 Max: card rossa piena + testo nero (il bianco/grigio non si legge bene) */
-    .card.zone-black {
-      background: #ef4444;
-      border-color: rgba(0, 0, 0, 0.22);
-      border-left-color: #b91c1c;
-      color: #0e0e10;
+    /*
+     * Live / proiezione: zona = fill scuro (palette soglia altra app).
+     * Testo chiaro. Riepilogo (.summary): fondo scuro + bordo colorato.
+     */
+    .card.zone-blue:not(.summary) {
+      background: var(--zone-fill-blue);
+      border-color: rgba(255, 255, 255, 0.1);
+      border-left-color: var(--zone-blue);
+      color: var(--ink);
     }
-    .card.zone-black .name,
-    .card.zone-black .metric-label,
-    .card.zone-black .summary-meta {
-      color: #0e0e10;
+    .card.zone-green:not(.summary) {
+      background: var(--zone-fill-green);
+      border-color: rgba(255, 255, 255, 0.1);
+      border-left-color: var(--zone-green);
+      color: var(--ink);
     }
-    .card.zone-black .card-foot {
-      border-top-color: rgba(0, 0, 0, 0.2);
+    .card.zone-yellow:not(.summary) {
+      background: var(--zone-fill-yellow);
+      border-color: rgba(255, 255, 255, 0.1);
+      border-left-color: var(--zone-yellow);
+      color: var(--ink);
     }
-    .card.zone-black .fei-block {
-      border-top-color: rgba(0, 0, 0, 0.2);
+    .card.zone-red:not(.summary) {
+      background: var(--zone-fill-red);
+      border-color: rgba(255, 255, 255, 0.1);
+      border-left-color: var(--zone-red);
+      color: var(--ink);
     }
-    .card.zone-black .fei-score,
-    .card.zone-black .fei-score .fei-label,
-    .card.zone-black .fei-deltas,
-    .card.zone-black .fei-miss {
-      color: #0e0e10;
+    .card.zone-black:not(.summary) {
+      background: var(--zone-fill-black);
+      border-color: rgba(255, 255, 255, 0.12);
+      border-left-color: #ef4444;
+      color: var(--ink);
     }
-    .card.zone-black .status-pill {
-      background: rgba(0, 0, 0, 0.18);
-      color: #0e0e10;
+    .card.summary.zone-blue { border-left-color: var(--zone-blue); }
+    .card.summary.zone-green { border-left-color: var(--zone-green); }
+    .card.summary.zone-yellow { border-left-color: var(--zone-yellow); }
+    .card.summary.zone-red { border-left-color: var(--zone-red); }
+    .card.summary.zone-black { border-left-color: #ef4444; }
+
+    .card.zone-blue:not(.summary) .name,
+    .card.zone-green:not(.summary) .name,
+    .card.zone-yellow:not(.summary) .name,
+    .card.zone-red:not(.summary) .name,
+    .card.zone-black:not(.summary) .name {
+      color: var(--ink);
+    }
+    .card.zone-blue:not(.summary) .metric-label,
+    .card.zone-green:not(.summary) .metric-label,
+    .card.zone-yellow:not(.summary) .metric-label,
+    .card.zone-red:not(.summary) .metric-label,
+    .card.zone-black:not(.summary) .metric-label {
+      color: rgba(250, 250, 250, 0.72);
+    }
+    .card.zone-blue:not(.summary) .metric + .metric,
+    .card.zone-green:not(.summary) .metric + .metric,
+    .card.zone-yellow:not(.summary) .metric + .metric,
+    .card.zone-red:not(.summary) .metric + .metric,
+    .card.zone-black:not(.summary) .metric + .metric {
+      border-left-color: rgba(255, 255, 255, 0.22);
+    }
+    .card.zone-blue:not(.summary) .card-foot,
+    .card.zone-green:not(.summary) .card-foot,
+    .card.zone-yellow:not(.summary) .card-foot,
+    .card.zone-red:not(.summary) .card-foot,
+    .card.zone-black:not(.summary) .card-foot,
+    .card.zone-blue:not(.summary) .fei-block,
+    .card.zone-green:not(.summary) .fei-block,
+    .card.zone-yellow:not(.summary) .fei-block,
+    .card.zone-red:not(.summary) .fei-block,
+    .card.zone-black:not(.summary) .fei-block {
+      border-top-color: rgba(255, 255, 255, 0.22);
+    }
+    .card.zone-blue:not(.summary) .bpm,
+    .card.zone-blue:not(.summary) .pct,
+    .card.zone-green:not(.summary) .bpm,
+    .card.zone-green:not(.summary) .pct,
+    .card.zone-yellow:not(.summary) .bpm,
+    .card.zone-yellow:not(.summary) .pct,
+    .card.zone-red:not(.summary) .bpm,
+    .card.zone-red:not(.summary) .pct,
+    .card.zone-black:not(.summary) .bpm,
+    .card.zone-black:not(.summary) .pct,
+    .card.zone-blue:not(.summary) .zone-tag,
+    .card.zone-green:not(.summary) .zone-tag,
+    .card.zone-yellow:not(.summary) .zone-tag,
+    .card.zone-red:not(.summary) .zone-tag,
+    .card.zone-black:not(.summary) .zone-tag,
+    .card.zone-blue:not(.summary) .fei-score,
+    .card.zone-green:not(.summary) .fei-score,
+    .card.zone-yellow:not(.summary) .fei-score,
+    .card.zone-red:not(.summary) .fei-score,
+    .card.zone-black:not(.summary) .fei-score,
+    .card.zone-blue:not(.summary) .fei-score .fei-label,
+    .card.zone-green:not(.summary) .fei-score .fei-label,
+    .card.zone-yellow:not(.summary) .fei-score .fei-label,
+    .card.zone-red:not(.summary) .fei-score .fei-label,
+    .card.zone-black:not(.summary) .fei-score .fei-label,
+    .card.zone-blue:not(.summary) .fei-score strong,
+    .card.zone-green:not(.summary) .fei-score strong,
+    .card.zone-yellow:not(.summary) .fei-score strong,
+    .card.zone-red:not(.summary) .fei-score strong,
+    .card.zone-black:not(.summary) .fei-score strong,
+    .card.zone-blue:not(.summary) .fei-score.up strong,
+    .card.zone-green:not(.summary) .fei-score.up strong,
+    .card.zone-yellow:not(.summary) .fei-score.up strong,
+    .card.zone-red:not(.summary) .fei-score.up strong,
+    .card.zone-black:not(.summary) .fei-score.up strong,
+    .card.zone-blue:not(.summary) .fei-score.down strong,
+    .card.zone-green:not(.summary) .fei-score.down strong,
+    .card.zone-yellow:not(.summary) .fei-score.down strong,
+    .card.zone-red:not(.summary) .fei-score.down strong,
+    .card.zone-black:not(.summary) .fei-score.down strong,
+    .card.zone-blue:not(.summary) .fei-deltas,
+    .card.zone-green:not(.summary) .fei-deltas,
+    .card.zone-yellow:not(.summary) .fei-deltas,
+    .card.zone-red:not(.summary) .fei-deltas,
+    .card.zone-black:not(.summary) .fei-deltas,
+    .card.zone-blue:not(.summary) .fei-miss,
+    .card.zone-green:not(.summary) .fei-miss,
+    .card.zone-yellow:not(.summary) .fei-miss,
+    .card.zone-red:not(.summary) .fei-miss,
+    .card.zone-black:not(.summary) .fei-miss {
+      color: var(--ink);
+    }
+    .card.zone-blue:not(.summary) .fei-score .fei-delta-pp,
+    .card.zone-green:not(.summary) .fei-score .fei-delta-pp,
+    .card.zone-yellow:not(.summary) .fei-score .fei-delta-pp,
+    .card.zone-red:not(.summary) .fei-score .fei-delta-pp,
+    .card.zone-black:not(.summary) .fei-score .fei-delta-pp,
+    .card.zone-blue:not(.summary) .fei-score .fei-delta-pp.up,
+    .card.zone-green:not(.summary) .fei-score .fei-delta-pp.up,
+    .card.zone-yellow:not(.summary) .fei-score .fei-delta-pp.up,
+    .card.zone-red:not(.summary) .fei-score .fei-delta-pp.up,
+    .card.zone-black:not(.summary) .fei-score .fei-delta-pp.up,
+    .card.zone-blue:not(.summary) .fei-score .fei-delta-pp.down,
+    .card.zone-green:not(.summary) .fei-score .fei-delta-pp.down,
+    .card.zone-yellow:not(.summary) .fei-score .fei-delta-pp.down,
+    .card.zone-red:not(.summary) .fei-score .fei-delta-pp.down,
+    .card.zone-black:not(.summary) .fei-score .fei-delta-pp.down {
+      color: rgba(250, 250, 250, 0.82);
+    }
+    .card.zone-blue:not(.summary) .status-pill,
+    .card.zone-green:not(.summary) .status-pill,
+    .card.zone-yellow:not(.summary) .status-pill,
+    .card.zone-red:not(.summary) .status-pill,
+    .card.zone-black:not(.summary) .status-pill {
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--ink);
     }
     .card.offline {
-      border-left-color: #3f3f46;
+      border-left-color: #3f3f46 !important;
       opacity: 0.72;
-      background: #141418;
+      background: #141418 !important;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .card.offline .name,
+    .card.offline .metric-label,
+    .card.offline .bpm,
+    .card.offline .pct,
+    .card.offline .zone-tag {
+      color: var(--muted) !important;
     }
     .card.beat {
       transform: scale(1.02);
@@ -530,14 +663,37 @@
       margin-bottom: 0.25rem;
     }
     .name {
-      font-size: 0.88rem;
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: clamp(2rem, 5vw, 2.75rem);
       font-weight: 700;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.05em;
+      line-height: 1;
       white-space: nowrap;
       overflow: hidden;
-      text-overflow: ellipsis;
       text-transform: uppercase;
       color: var(--ink);
+    }
+    .name-text {
+      display: inline-block;
+    }
+    .name.is-scrolling .name-text {
+      animation: name-marquee var(--name-duration, 6s) ease-in-out infinite;
+      will-change: transform;
+    }
+    @keyframes name-marquee {
+      0%, 18% { transform: translateX(0); }
+      45%, 55% { transform: translateX(var(--name-shift, 0)); }
+      82%, 100% { transform: translateX(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .name.is-scrolling .name-text {
+        animation: none;
+      }
+    }
+    .card.summary .name {
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
     }
     .status-pill {
       flex-shrink: 0;
@@ -549,18 +705,9 @@
       background: #2a2a32;
       color: var(--muted);
     }
+    /* LIVE nascosto in proiezione — restano solo INSTABILE / OFFLINE */
     .status-pill.live {
-      color: #0e0e10;
-      background: var(--zone-green);
-    }
-    /* In REC il badge LIVE segue il colore zona dell’allenamento */
-    body.is-recording .card.zone-blue .status-pill.live { background: var(--zone-blue); }
-    body.is-recording .card.zone-green .status-pill.live { background: var(--zone-green); }
-    body.is-recording .card.zone-yellow .status-pill.live { background: var(--zone-yellow); }
-    body.is-recording .card.zone-red .status-pill.live { background: var(--zone-red); }
-    body.is-recording .card.zone-black .status-pill.live {
-      background: #0e0e10;
-      color: #fafafa;
+      display: none;
     }
     .status-pill.unstable {
       color: #0e0e10;
@@ -600,9 +747,6 @@
     .metric + .metric {
       border-left: 1px solid var(--border);
     }
-    .card.zone-black .metric + .metric {
-      border-left-color: rgba(0, 0, 0, 0.2);
-    }
     .bpm,
     .pct {
       font-family: "Bebas Neue", sans-serif;
@@ -611,16 +755,17 @@
       letter-spacing: 0.02em;
       color: var(--ink);
     }
-    .card.zone-blue .bpm,
-    .card.zone-blue .pct { color: var(--zone-blue); }
-    .card.zone-green .bpm,
-    .card.zone-green .pct { color: var(--zone-green); }
-    .card.zone-yellow .bpm,
-    .card.zone-yellow .pct { color: var(--zone-yellow); }
-    .card.zone-red .bpm,
-    .card.zone-red .pct { color: var(--zone-red); }
-    .card.zone-black .bpm,
-    .card.zone-black .pct { color: #0e0e10; }
+    /* Riepilogo: numeri colorati su fondo scuro */
+    .card.summary.zone-blue .bpm,
+    .card.summary.zone-blue .pct { color: var(--zone-blue); }
+    .card.summary.zone-green .bpm,
+    .card.summary.zone-green .pct { color: var(--zone-green); }
+    .card.summary.zone-yellow .bpm,
+    .card.summary.zone-yellow .pct { color: var(--zone-yellow); }
+    .card.summary.zone-red .bpm,
+    .card.summary.zone-red .pct { color: var(--zone-red); }
+    .card.summary.zone-black .bpm,
+    .card.summary.zone-black .pct { color: var(--zone-red); }
     .bpm.off,
     .pct.off {
       color: #52525b !important;
@@ -634,7 +779,6 @@
       font-weight: 700;
       text-transform: uppercase;
     }
-    .card.zone-black .metric-label { color: rgba(14, 14, 16, 0.72); }
     .pct span {
       font-size: 0.42em;
       letter-spacing: 0.04em;
@@ -678,6 +822,33 @@
       color: var(--muted);
       margin-right: 0.35rem;
     }
+    .fei-score .fei-delta-pp {
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-left: 0.25rem;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    /* Confronto %: indipendente dal FEI — arancio se sopra, grigio se sotto */
+    .fei-score .fei-delta-pp.up { color: var(--zone-orange); }
+    .fei-score .fei-delta-pp.down { color: var(--muted); }
+    .fei-score .fei-delta-pp .fei-arrow {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      margin-right: 0.28em;
+      vertical-align: 0.05em;
+      border-left: 0.38em solid transparent;
+      border-right: 0.38em solid transparent;
+    }
+    .fei-score .fei-delta-pp.up .fei-arrow {
+      border-bottom: 0.55em solid currentColor;
+    }
+    .fei-score .fei-delta-pp.down .fei-arrow {
+      border-top: 0.55em solid currentColor;
+    }
     .fei-deltas {
       margin-top: 0.3rem;
       font-size: 0.62rem;
@@ -685,6 +856,85 @@
       color: var(--muted);
       line-height: 1.35;
       letter-spacing: 0.01em;
+    }
+    /*
+     * Confronto proiettato: poche info, tipografia grande.
+     * Niente badge LIVE, niente riga zona/kcal, niente dettaglio delta FEI.
+     */
+    body.is-comparing .grid {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.15rem;
+    }
+    body.is-comparing .card {
+      min-height: 228px;
+      padding: 1.05rem 1rem 0.95rem;
+    }
+    body.is-comparing .card-head {
+      margin-bottom: 0.15rem;
+    }
+    body.is-comparing .name {
+      font-size: clamp(2.15rem, 5.5vw, 3rem);
+      letter-spacing: 0.06em;
+    }
+    body.is-comparing .card-foot {
+      display: none;
+    }
+    body.is-comparing .fei-deltas {
+      display: none;
+    }
+    body.is-comparing .metrics-row {
+      flex: 1 1 auto;
+      padding: 0.45rem 0 0.35rem;
+      align-items: center;
+    }
+    body.is-comparing .pct,
+    body.is-comparing .bpm {
+      font-size: clamp(2.75rem, 5.8vw, 3.75rem);
+      line-height: 0.86;
+    }
+    body.is-comparing .bpm.off,
+    body.is-comparing .pct.off {
+      font-size: clamp(2.1rem, 4.2vw, 2.6rem);
+    }
+    body.is-comparing .metric-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      margin-top: 0.28rem;
+    }
+    body.is-comparing .fei-block {
+      margin-top: auto;
+      padding-top: 0.35rem;
+      border-top: none;
+    }
+    body.is-comparing .fei-score {
+      font-size: clamp(2.85rem, 5.6vw, 3.7rem);
+      line-height: 0.86;
+      letter-spacing: 0.02em;
+    }
+    body.is-comparing .fei-score .fei-label {
+      display: block;
+      margin: 0 0 0.1rem;
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+    }
+    body.is-comparing .fei-score .fei-delta-pp {
+      font-size: 0.92rem;
+      margin-left: 0.45rem;
+      vertical-align: 0.55em;
+    }
+    body.is-comparing .fei-score .fei-delta-pp .fei-arrow {
+      border-left-width: 0.45em;
+      border-right-width: 0.45em;
+      margin-right: 0.32em;
+    }
+    body.is-comparing .fei-score .fei-delta-pp.up .fei-arrow {
+      border-bottom-width: 0.68em;
+    }
+    body.is-comparing .fei-score .fei-delta-pp.down .fei-arrow {
+      border-top-width: 0.68em;
+    }
+    body.is-comparing .fei-miss {
+      font-size: 0.78rem;
     }
     .fei-deltas .up { color: var(--zone-orange); }
     .fei-deltas .down { color: var(--zone-blue); }
@@ -701,11 +951,11 @@
       color: var(--muted);
       text-transform: uppercase;
     }
-    .card.zone-blue .zone-tag { color: var(--zone-blue); }
-    .card.zone-green .zone-tag { color: var(--zone-green); }
-    .card.zone-yellow .zone-tag { color: var(--zone-yellow); }
-    .card.zone-red .zone-tag { color: var(--zone-red); }
-    .card.zone-black .zone-tag { color: #0e0e10; }
+    .card.summary.zone-blue .zone-tag { color: var(--zone-blue); }
+    .card.summary.zone-green .zone-tag { color: var(--zone-green); }
+    .card.summary.zone-yellow .zone-tag { color: var(--zone-yellow); }
+    .card.summary.zone-red .zone-tag { color: var(--zone-red); }
+    .card.summary.zone-black .zone-tag { color: var(--zone-red); }
 
     .hr-chart-wrap {
       position: relative;
@@ -1594,10 +1844,15 @@
     let lastCompletedWorkout = null;
     let wasRecording = false;
     let summaryLoadId = null;
+    /** Generazione load riepilogo: evita race socket/HTTP allo stop. */
+    let summaryLoadGen = 0;
+    let summaryLoadInflight = null;
     let historyOpen = false;
     let selectedHistoryId = null;
     /** Riferimento FEI scelto prima di Avvia (client). */
     let pendingReference = null;
+    /** Cache full del workout di riferimento (sample) — prefetch in REC. */
+    let referenceWorkoutCache = null;
     /** Snapshot compare live dal server. */
     let liveCompare = null;
     /** Compare finale per riepilogo duale. */
@@ -1682,6 +1937,8 @@
           startedAt: ref.startedAt || null,
           endedAt: ref.endedAt || null
         };
+        // Prefetch sample del rif. così allo stop il grafico ha subito la scala corretta
+        prefetchReferenceWorkout(ref.id);
       }
       updateRefChip();
       highlightHistoryItem(selectedHistoryId);
@@ -1896,22 +2153,11 @@
       return out;
     }
 
-    /**
-     * Porta la serie su asse 0→1 (forma intera).
-     * In overlay confronta ogni allenamento mantiene la sua forma completa
-     * e occupa tutta la larghezza — niente tronco sulla durata più corta.
-     */
-    function samplesAsUnitSpan(samples) {
+    /** Ultimo elapsed (ms) di una serie già normalizzata. */
+    function seriesEndMs(samples) {
       const list = Array.isArray(samples) ? samples : [];
-      if (!list.length) return [];
-      const t0 = list[0].t;
-      const t1 = list[list.length - 1].t;
-      const span = Math.max(1, t1 - t0);
-      return list.map((s) => ({
-        t: (s.t - t0) / span,
-        bpm: s.bpm,
-        intensityPct: s.intensityPct
-      }));
+      if (!list.length) return 0;
+      return Math.max(0, Number(list[list.length - 1].t) || 0);
     }
 
     function setActiveNav(section) {
@@ -1967,50 +2213,96 @@
       renderAll(lastStudents);
     }
 
-    async function loadAndShowSummary(workoutId, detailMaybe) {
-      const id = String(workoutId || '').trim();
-      if (!id) return;
-      if (summaryLoadId === id && summaryByParticipant) return;
-      summaryLoadId = id;
-      selectedHistoryId = id;
+    /** True se il payload ha array di sample (non solo il conteggio del summarize). */
+    function workoutHasSampleArrays(workout) {
+      if (!workout || !workout.participants) return false;
+      const first = Object.values(workout.participants)[0];
+      return Boolean(first && Array.isArray(first.samples));
+    }
 
+    async function prefetchReferenceWorkout(refId) {
+      const id = String(refId || '').trim();
+      if (!id) return null;
+      if (referenceWorkoutCache && referenceWorkoutCache.id === id) {
+        return referenceWorkoutCache;
+      }
       try {
-        let detail = detailMaybe;
-        if (!detail || !detail.participants) {
-          const detailRes = await fetch(`/api/workouts/${encodeURIComponent(id)}`);
-          if (!detailRes.ok) {
-            throw new Error(`Impossibile caricare il riepilogo (${detailRes.status})`);
-          }
-          detail = await detailRes.json();
-        }
-        await enterSummaryMode(detail);
-      } catch (err) {
-        summaryLoadId = null;
-        showWorkoutError(err.message || 'Riepilogo non disponibile');
+        const res = await fetch(`/api/workouts/${encodeURIComponent(id)}`);
+        if (!res.ok) return null;
+        referenceWorkoutCache = await res.json();
+        return referenceWorkoutCache;
+      } catch {
+        return null;
       }
     }
 
-    async function enterSummaryMode(workout) {
-      if (!workout || !workout.id) return;
-      lastCompletedWorkout = workout;
-      summaryByParticipant = new Map();
-      selectedHistoryId = workout.id;
-      summaryCompare = null;
-      summaryReferenceWorkout = null;
-      const list = Object.values(workout.participants || {});
-      for (const p of list) {
-        const live = lastStudents.find((s) => s.id === p.id);
-        const profile = live && live.profile ? live.profile : null;
-        summaryByParticipant.set(p.id, buildParticipantSummary(p, workout, profile));
+    async function loadAndShowSummary(workoutId, detailMaybe) {
+      const id = String(workoutId || '').trim();
+      if (!id) return;
+
+      const hasRichDetail = workoutHasSampleArrays(detailMaybe);
+      // Già in riepilogo per questo id: join sull’inflight, oppure no-op se completo
+      if (summaryLoadId === id && summaryByParticipant && !hasRichDetail) {
+        if (summaryLoadInflight) return summaryLoadInflight;
+        return;
+      }
+      // Stesso id in caricamento senza detail più ricco → aspetta quello in corso
+      if (summaryLoadInflight && summaryLoadId === id && !hasRichDetail) {
+        return summaryLoadInflight;
       }
 
+      const gen = ++summaryLoadGen;
+      summaryLoadId = id;
+      selectedHistoryId = id;
+
+      const run = (async () => {
+        try {
+          let detail = detailMaybe;
+          if (!workoutHasSampleArrays(detail)) {
+            const detailRes = await fetch(`/api/workouts/${encodeURIComponent(id)}`);
+            if (!detailRes.ok) {
+              throw new Error(`Impossibile caricare il riepilogo (${detailRes.status})`);
+            }
+            detail = await detailRes.json();
+          }
+          if (gen !== summaryLoadGen) return;
+          await enterSummaryMode(detail, gen);
+        } catch (err) {
+          if (gen === summaryLoadGen) {
+            summaryLoadId = null;
+            showWorkoutError(err.message || 'Riepilogo non disponibile');
+          }
+        }
+      })();
+
+      summaryLoadInflight = run;
+      try {
+        await run;
+      } finally {
+        if (summaryLoadInflight === run) summaryLoadInflight = null;
+      }
+    }
+
+    async function enterSummaryMode(workout, gen) {
+      if (!workout || !workout.id) return;
+      if (gen != null && gen !== summaryLoadGen) return;
+
+      const list = Object.values(workout.participants || {});
       const duration = formatDuration(
         Math.max(0, (workout.endedAt || Date.now()) - (workout.startedAt || Date.now()))
       );
-      const refId = workout.referenceWorkoutId;
+      const refId = workout.referenceWorkoutId || null;
       let statusHtml =
         `<strong>Riepilogo</strong> · ${workout.title || 'Allenamento'} · ${duration} · ` +
         `${workout.sampleCount || 0} campioni`;
+
+      // Carica compare + rif. PRIMA di pubblicare summaryByParticipant,
+      // così il primo draw dopo lo stop ha già la scala temporale condivisa.
+      let nextCompare = null;
+      let nextRef =
+        refId && referenceWorkoutCache && referenceWorkoutCache.id === refId
+          ? referenceWorkoutCache
+          : null;
 
       if (refId) {
         try {
@@ -2018,31 +2310,49 @@
             fetch(
               `/api/workout/compare?a=${encodeURIComponent(workout.id)}&b=${encodeURIComponent(refId)}`
             ),
-            fetch(`/api/workouts/${encodeURIComponent(refId)}`)
+            nextRef
+              ? Promise.resolve(null)
+              : fetch(`/api/workouts/${encodeURIComponent(refId)}`)
           ]);
+          if (gen != null && gen !== summaryLoadGen) return;
           if (cmpRes.ok) {
             const cmpData = await cmpRes.json();
-            summaryCompare = cmpData.compare || null;
+            nextCompare = cmpData.compare || null;
             const refTitle =
-              (summaryCompare && summaryCompare.reference && summaryCompare.reference.title) ||
+              (nextCompare && nextCompare.reference && nextCompare.reference.title) ||
               workout.referenceTitle ||
               'riferimento';
             const classFei =
-              summaryCompare && summaryCompare.classAvg ? summaryCompare.classAvg.fei : null;
+              nextCompare && nextCompare.classAvg ? nextCompare.classAvg.fei : null;
             statusHtml =
               `<strong>Confronto FEI</strong> · ${workout.title || 'Allenamento'} vs ${refTitle}` +
               (classFei != null ? ` · media ${formatFei(classFei)}` : '') +
               ` · ${duration}`;
             if (avgFeiEl) avgFeiEl.textContent = classFei != null ? formatFei(classFei) : '—';
           }
-          if (refRes.ok) {
-            summaryReferenceWorkout = await refRes.json();
+          if (refRes && refRes.ok) {
+            nextRef = await refRes.json();
+            if (nextRef && nextRef.id) referenceWorkoutCache = nextRef;
           }
         } catch {
           /* riepilogo singolo ok anche senza compare */
         }
       } else if (avgFeiEl && !liveCompare) {
         avgFeiEl.textContent = '—';
+      }
+
+      if (gen != null && gen !== summaryLoadGen) return;
+
+      // Pubblica stato in un colpo solo (niente finestra senza overlay rif.)
+      lastCompletedWorkout = workout;
+      selectedHistoryId = workout.id;
+      summaryCompare = nextCompare;
+      summaryReferenceWorkout = nextRef;
+      summaryByParticipant = new Map();
+      for (const p of list) {
+        const live = lastStudents.find((s) => s.id === p.id);
+        const profile = live && live.profile ? live.profile : null;
+        summaryByParticipant.set(p.id, buildParticipantSummary(p, workout, profile));
       }
 
       workoutStatus.innerHTML = statusHtml;
@@ -2394,33 +2704,29 @@
 
     /**
      * Grafico HR riepilogo. Se `refOverlay` è presente, disegna anche
-     * la curva della lezione originale in grigio (stessa timeline t del FEI).
+     * la curva della lezione originale in grigio sulla stessa scala temporale
+     * (elapsed ms condiviso = max delle due durate): una sessione di 5′ su un
+     * rif. di 40′ occupa solo il primo ottavo della larghezza.
      * `view` opzionale: { start, end } in frazioni 0–1 della timeline (zoom).
      */
     function drawHrChart(canvas, summary, refOverlay, view) {
       if (!canvas || !summary || summary.empty || !summary.samples.length) return;
       const compare = Boolean(refOverlay && refOverlay.samples && refOverlay.samples.length);
-      // Confronta: dal primo battito + forma intera su 0→1 (come il grafico singolo)
+      // Confronta: dal primo battito, asse tempo assoluto condiviso
       // Singolo: elapsed dalla lezione
-      let samples = samplesAsElapsed(
+      const samples = samplesAsElapsed(
         summary.samples,
         summary.startedAt,
         compare ? 'first' : 'workout'
       );
       if (!samples.length) return;
-      let refSamples = compare
+      const refSamples = compare
         ? samplesAsElapsed(refOverlay.samples, refOverlay.startedAt, 'first')
         : [];
 
-      let spanT;
-      if (compare) {
-        samples = samplesAsUnitSpan(samples);
-        refSamples = samplesAsUnitSpan(refSamples);
-        spanT = 1;
-      } else {
-        spanT = Math.max(1, samples[samples.length - 1].t);
-      }
-      if (!samples.length) return;
+      const spanT = compare
+        ? Math.max(1, seriesEndMs(samples), seriesEndMs(refSamples))
+        : Math.max(1, seriesEndMs(samples));
 
       const win = clampChartView(view || { start: 0, end: 1 });
       const t0 = win.start * spanT;
@@ -2528,7 +2834,7 @@
       card.classList.remove('zone-blue', 'zone-green', 'zone-yellow', 'zone-red', 'zone-black');
       if (!summary.empty) card.classList.add(`zone-${summary.dominant}`);
 
-      card.querySelector('.name').textContent = summary.name || '—';
+      setCardName(card, summary.name || '—');
       const pill = card.querySelector('.status-pill');
       pill.textContent = 'DONE';
       pill.className = 'status-pill done';
@@ -2920,10 +3226,63 @@
       btnCloseDetail.focus();
     }
 
+    const nameResizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver((entries) => {
+            for (const entry of entries) refreshNameScroll(entry.target);
+          })
+        : null;
+
+    function refreshNameScroll(nameEl) {
+      if (!nameEl) return;
+      const textEl = nameEl.querySelector('.name-text');
+      if (!textEl) return;
+      const overflow = textEl.scrollWidth - nameEl.clientWidth;
+      if (overflow > 2) {
+        const duration = `${Math.max(5, Math.min(12, 4 + overflow / 28)).toFixed(1)}s`;
+        const shift = `-${overflow}px`;
+        if (
+          nameEl.classList.contains('is-scrolling') &&
+          nameEl.style.getPropertyValue('--name-shift') === shift &&
+          nameEl.style.getPropertyValue('--name-duration') === duration
+        ) {
+          return;
+        }
+        nameEl.style.setProperty('--name-shift', shift);
+        nameEl.style.setProperty('--name-duration', duration);
+        nameEl.classList.add('is-scrolling');
+      } else if (nameEl.classList.contains('is-scrolling')) {
+        nameEl.classList.remove('is-scrolling');
+        nameEl.style.removeProperty('--name-shift');
+        nameEl.style.removeProperty('--name-duration');
+      }
+    }
+
+    function setCardName(card, rawName) {
+      const nameEl = card.querySelector('.name');
+      if (!nameEl) return;
+      let textEl = nameEl.querySelector('.name-text');
+      if (!textEl) {
+        nameEl.textContent = '';
+        textEl = document.createElement('span');
+        textEl.className = 'name-text';
+        nameEl.appendChild(textEl);
+      }
+      const text = rawName || '—';
+      const changed = textEl.textContent !== text;
+      if (changed) textEl.textContent = text;
+      if (nameResizeObserver) nameResizeObserver.observe(nameEl);
+      if (changed) requestAnimationFrame(() => refreshNameScroll(nameEl));
+    }
+
+    function refreshAllNameScrolls() {
+      document.querySelectorAll('.card .name').forEach(refreshNameScroll);
+    }
+
     function cardMarkup() {
       return `
         <div class="card-head">
-          <div class="name"></div>
+          <div class="name"><span class="name-text"></span></div>
           <div class="status-pill">OFFLINE</div>
         </div>
         <div class="live-body">
@@ -2978,7 +3337,7 @@
       }
       const name = card.querySelector('.name')?.textContent || '';
       card.innerHTML = cardMarkup();
-      if (name) card.querySelector('.name').textContent = name;
+      if (name) setCardName(card, name);
     }
 
     function showLiveBody(card) {
@@ -3067,6 +3426,8 @@
       currentWorkout = active ? w : null;
       workoutBar.classList.toggle('recording', active);
       document.body.classList.toggle('is-recording', active);
+      document.body.classList.toggle('is-comparing', Boolean(liveCompare));
+      requestAnimationFrame(() => refreshAllNameScrolls());
       if (recBadge) {
         recBadge.classList.toggle('hidden', !active);
         if (!active && recBadgeFei) {
@@ -3085,6 +3446,7 @@
           endedAt: reference.endedAt || null
         };
         updateRefChip();
+        prefetchReferenceWorkout(reference.id);
       }
 
       if (workoutTick) {
@@ -3093,6 +3455,7 @@
       }
 
       // Passaggio REC → stop: mostra subito i grafici di riepilogo
+      // (join sull’inflight se stopWorkout ha già avviato il load con detail)
       if (wasRecording && !active) {
         liveCompare = null;
         const completedId = (completed && completed.id) || (w && w.id);
@@ -3247,6 +3610,7 @@
             endedAt: data.reference.endedAt || null
           };
           updateRefChip();
+          prefetchReferenceWorkout(data.reference.id);
         }
         renderWorkoutStatus({
           active: true,
@@ -3431,7 +3795,7 @@
       if (zone !== 'off') card.classList.add(`zone-${zone}`);
       if (state === 'offline') card.classList.add('offline');
 
-      card.querySelector('.name').textContent = s.name || '—';
+      setCardName(card, s.name || '—');
 
       const pill = card.querySelector('.status-pill');
       if (state === 'live') {
@@ -3494,10 +3858,14 @@
       deltasEl.classList.remove('hidden');
       const tone = feiToneClass(cmp.fei);
       scoreEl.className = `fei-score${tone ? ` ${tone}` : ''}`;
+      const ppTone = deltaToneClass(cmp.headlinePp);
+      const ppArrow = ppTone
+        ? `<span class="fei-arrow" aria-hidden="true"></span>`
+        : '';
       scoreEl.innerHTML =
         `<span class="fei-label">FEI</span><strong>${formatFei(cmp.fei)}</strong>` +
         (cmp.headlinePp != null
-          ? ` <span style="font-family:'DM Sans',sans-serif;font-size:0.65rem;font-weight:700;color:var(--muted);margin-left:0.25rem">Δ ${formatDelta(cmp.headlinePp)}%</span>`
+          ? ` <span class="fei-delta-pp${ppTone ? ` ${ppTone}` : ''}">${ppArrow}${formatDelta(cmp.headlinePp)}%</span>`
           : '');
       const d = cmp.deltas || {};
       deltasEl.innerHTML = formatFeiDeltas(d);
