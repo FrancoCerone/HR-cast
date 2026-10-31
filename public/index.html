@@ -446,30 +446,48 @@
       min-height: 0;
       overflow: auto;
       padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-direction: column;
       /* Header/footer fixed a scomparsa: la dashboard usa tutto lo schermo */
     }
+    /*
+     * Griglia dinamica: colonne = min(8, invitati + 1).
+     * Es. 2 invitati → 3 colonne → le card occupano 2/3 dello schermo.
+     * Le righe riempiono l’altezza disponibile.
+     */
     .grid {
+      --grid-cols: 1;
+      --grid-rows: 1;
+      --grid-row-min: 150px;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-      gap: 1rem;
-      align-content: start;
+      grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+      grid-template-rows: repeat(var(--grid-rows), minmax(var(--grid-row-min), 1fr));
+      gap: clamp(0.55rem, 1.2vw, 1.1rem);
+      align-content: stretch;
     }
-    @media (min-width: 1200px) {
-      .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.1rem; }
+    .grid.is-empty {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
     }
 
     .card {
       position: relative;
       background: var(--surface);
       border-radius: 18px;
-      padding: 1rem 1rem 0.85rem;
+      padding: clamp(0.65rem, 1.8cqw, 1.15rem) clamp(0.7rem, 2cqw, 1.15rem) clamp(0.55rem, 1.5cqw, 0.95rem);
       border: 1px solid var(--border);
       box-shadow: var(--shadow-sm);
       border-left: 4px solid #3f3f46;
       transition: transform 0.12s, box-shadow 0.2s, border-color 0.2s;
-      min-height: 152px;
+      min-height: 0;
+      height: 100%;
       display: flex;
       flex-direction: column;
+      container-type: size;
+      container-name: hrcard;
     }
     /*
      * Live / proiezione: zona = fill scuro (palette soglia altra app).
@@ -640,7 +658,7 @@
       box-shadow: 0 0 0 1px rgba(245, 208, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.5);
     }
     .card.summary {
-      min-height: 168px;
+      min-height: 0;
       opacity: 1;
       background: var(--surface);
       cursor: pointer;
@@ -665,7 +683,7 @@
     .name {
       flex: 1 1 auto;
       min-width: 0;
-      font-size: clamp(2rem, 5vw, 2.75rem);
+      font-size: clamp(1.15rem, 11cqw, 4.75rem);
       font-weight: 700;
       letter-spacing: 0.05em;
       line-height: 1;
@@ -692,7 +710,7 @@
       }
     }
     .card.summary .name {
-      font-size: 0.95rem;
+      font-size: clamp(0.95rem, 8cqw, 2.4rem);
       letter-spacing: 0.02em;
     }
     .status-pill {
@@ -750,7 +768,7 @@
     .bpm,
     .pct {
       font-family: "Bebas Neue", sans-serif;
-      font-size: clamp(2.4rem, 4.8vw, 3.25rem);
+      font-size: clamp(1.6rem, 22cqw, 6.5rem);
       line-height: 0.88;
       letter-spacing: 0.02em;
       color: var(--ink);
@@ -769,10 +787,10 @@
     .bpm.off,
     .pct.off {
       color: #52525b !important;
-      font-size: clamp(1.8rem, 3.5vw, 2.2rem);
+      font-size: clamp(1.25rem, 16cqw, 4rem);
     }
     .metric-label {
-      font-size: 0.58rem;
+      font-size: clamp(0.5rem, 2.4cqw, 0.9rem);
       letter-spacing: 0.18em;
       color: var(--muted);
       margin-top: 0.2rem;
@@ -806,7 +824,7 @@
     .fei-block.hidden { display: none; }
     .fei-score {
       font-family: "Bebas Neue", sans-serif;
-      font-size: 1.35rem;
+      font-size: clamp(1.1rem, 12cqw, 3.5rem);
       letter-spacing: 0.04em;
       line-height: 1;
       color: var(--ink);
@@ -861,19 +879,11 @@
      * Confronto proiettato: poche info, tipografia grande.
      * Niente badge LIVE, niente riga zona/kcal, niente dettaglio delta FEI.
      */
-    body.is-comparing .grid {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1.15rem;
-    }
-    body.is-comparing .card {
-      min-height: 228px;
-      padding: 1.05rem 1rem 0.95rem;
-    }
     body.is-comparing .card-head {
       margin-bottom: 0.15rem;
     }
     body.is-comparing .name {
-      font-size: clamp(2.15rem, 5.5vw, 3rem);
+      font-size: clamp(1.25rem, 13cqw, 5.25rem);
       letter-spacing: 0.06em;
     }
     body.is-comparing .card-foot {
@@ -889,15 +899,15 @@
     }
     body.is-comparing .pct,
     body.is-comparing .bpm {
-      font-size: clamp(2.75rem, 5.8vw, 3.75rem);
+      font-size: clamp(1.85rem, 26cqw, 7rem);
       line-height: 0.86;
     }
     body.is-comparing .bpm.off,
     body.is-comparing .pct.off {
-      font-size: clamp(2.1rem, 4.2vw, 2.6rem);
+      font-size: clamp(1.4rem, 18cqw, 4.5rem);
     }
     body.is-comparing .metric-label {
-      font-size: 0.62rem;
+      font-size: clamp(0.52rem, 2.6cqw, 0.95rem);
       letter-spacing: 0.16em;
       margin-top: 0.28rem;
     }
@@ -907,7 +917,7 @@
       border-top: none;
     }
     body.is-comparing .fei-score {
-      font-size: clamp(2.85rem, 5.6vw, 3.7rem);
+      font-size: clamp(1.7rem, 20cqw, 5.5rem);
       line-height: 0.86;
       letter-spacing: 0.02em;
     }
@@ -945,7 +955,7 @@
     }
 
     .zone-tag {
-      font-size: 0.58rem;
+      font-size: clamp(0.5rem, 2.2cqw, 0.85rem);
       font-weight: 700;
       letter-spacing: 0.12em;
       color: var(--muted);
@@ -1023,7 +1033,7 @@
     }
     .summary-avg {
       font-family: "Bebas Neue", sans-serif;
-      font-size: 1.35rem;
+      font-size: clamp(1.1rem, 10cqw, 2.8rem);
       line-height: 1;
       letter-spacing: 0.02em;
       color: var(--ink);
@@ -1678,7 +1688,7 @@
   </div>
 
   <main class="stage" id="sectionLive" aria-label="Live — partecipanti">
-    <div class="grid" id="grid">
+    <div class="grid is-empty" id="grid">
       <div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR. Stessa rete Wi‑Fi (o hotspot del PC coach).</div>
     </div>
   </main>
@@ -2374,6 +2384,7 @@
       if (!list.length) {
         grid.innerHTML =
           '<div class="empty">Nessun partecipante in questo allenamento.</div>';
+        updateGridLayout(0);
       } else {
         for (const p of list) {
           const live = lastStudents.find((s) => s.id === p.id);
@@ -2387,6 +2398,7 @@
             })
           );
         }
+        updateGridLayout(list.length);
       }
 
       liveCountEl.textContent = String(list.length);
@@ -3894,6 +3906,25 @@
       return card;
     }
 
+    const MAX_GRID_COLS = 8;
+
+    /** Colonne = min(8, n+1): con 2 invitati le card occupano 2/3 dello schermo. */
+    function updateGridLayout(count) {
+      const n = Math.max(0, Number(count) || 0);
+      if (n <= 0) {
+        grid.classList.add('is-empty');
+        grid.style.removeProperty('--grid-cols');
+        grid.style.removeProperty('--grid-rows');
+        return;
+      }
+      grid.classList.remove('is-empty');
+      const cols = Math.min(MAX_GRID_COLS, n + 1);
+      const rows = Math.max(1, Math.ceil(n / cols));
+      grid.style.setProperty('--grid-cols', String(cols));
+      grid.style.setProperty('--grid-rows', String(rows));
+      requestAnimationFrame(() => refreshAllNameScrolls());
+    }
+
     function renderAll(students) {
       lastStudents = students;
       // In riepilogo la griglia resta bloccata sui partecipanti della lezione
@@ -3905,6 +3936,7 @@
         grid.innerHTML = '<div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR. Stessa rete Wi‑Fi (o hotspot del PC coach).</div>';
         cards.clear();
         lastBeatAt.clear();
+        updateGridLayout(0);
         return;
       }
 
@@ -3920,6 +3952,7 @@
           lastBeatAt.delete(id);
         }
       }
+      updateGridLayout(students.length);
     }
 
     // Re-eval unstable states periodically
