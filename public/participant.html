@@ -986,7 +986,6 @@
       <input id="hyperateIdConnect" type="text" placeholder="ID dall’app Watch" autocomplete="off" maxlength="32" spellcheck="false" />
       <div class="connect-actions">
         <button class="primary" id="connectHrBtn" type="button">Collega HypeRate</button>
-        <button class="secondary" id="connectBtn" type="button">Collega BLE</button>
         <button class="secondary hidden" id="reconnectBtn" type="button">Ricollega BLE</button>
       </div>
       <div id="confirmDevice" class="confirm hidden">
@@ -1086,7 +1085,6 @@
     const consentEl = document.getElementById('consent');
     const startBtn = document.getElementById('startBtn');
     const connectHrBtn = document.getElementById('connectHrBtn');
-    const connectBtn = document.getElementById('connectBtn');
     const reconnectBtn = document.getElementById('reconnectBtn');
     const editProfileBtn = document.getElementById('editProfileBtn');
     const backToLiveBtn = document.getElementById('backToLiveBtn');
@@ -2082,7 +2080,7 @@
         connectHyperate();
       } else {
         setStep(2);
-        setStatus('Collega HypeRate o BLE per iniziare.', 'warn');
+        setStatus('Inserisci il HypeRate ID per iniziare.', 'warn');
       }
     }
 
@@ -2119,7 +2117,6 @@
 
     startBtn.addEventListener('click', () => beginSession());
     connectHrBtn.addEventListener('click', connectHyperate);
-    connectBtn.addEventListener('click', connectBle);
     btnSettings.addEventListener('click', openSettings);
     editProfileBtn.addEventListener('click', () => {
       holdAwayFromLive = true;
