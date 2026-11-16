@@ -216,6 +216,60 @@
       color: var(--muted);
       margin: 0.85rem 0 0.75rem;
     }
+    .photo-row {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      margin: 0.15rem 0 1.05rem;
+    }
+    .photo-preview {
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .photo-preview.is-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .photo-actions {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .photo-actions .secondary,
+    .photo-actions .ghost {
+      width: auto;
+      margin: 0;
+      padding: 0.55rem 0.85rem;
+      font-size: 0.82rem;
+    }
+    .photo-actions .ghost {
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: transparent;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+    }
+    .photo-actions input[type="file"] {
+      display: none;
+    }
+    .photo-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
     .kcal-line {
       margin-top: 0.35rem;
       font-size: 0.9rem;
@@ -849,6 +903,17 @@
     <input id="name" type="text" placeholder="Es. Marco oppure P07" autocomplete="name" maxlength="40" />
 
     <div class="profile-block">
+      <p class="block-title">Foto profilo</p>
+      <div class="photo-row">
+        <div class="photo-preview is-empty" id="photoPreview" aria-hidden="true">?</div>
+        <div class="photo-actions">
+          <input id="photoFile" type="file" accept="image/*" capture="user" />
+          <button type="button" class="secondary" id="photoPickBtn">Scegli foto</button>
+          <button type="button" class="ghost hidden" id="photoClearBtn">Rimuovi</button>
+          <p class="photo-hint">Apparirà sulla dashboard della sala. Verrà ridimensionata automaticamente.</p>
+        </div>
+      </div>
+
       <p class="block-title">HypeRate</p>
       <label class="field" for="hyperateId">ID sessione (Watch)</label>
       <input id="hyperateId" type="text" placeholder="Es. xQc7L oppure internal-testing" autocomplete="off" maxlength="32" spellcheck="false" />
@@ -1073,14 +1138,85 @@
 
     /** @type {{ restingHrSource?: string, maxHrSource?: string }} */
     let profileMeta = { restingHrSource: null, maxHrSource: null };
+    /** @type {string|null} data-URL compressa */
+    let profilePhoto = null;
     let sessionKcal = 0;
     let lastKcalAt = 0;
+
+    const photoFileEl = document.getElementById('photoFile');
+    const photoPreviewEl = document.getElementById('photoPreview');
+    const photoPickBtn = document.getElementById('photoPickBtn');
+    const photoClearBtn = document.getElementById('photoClearBtn');
+
+    function renderPhotoPreview() {
+      if (!photoPreviewEl) return;
+      if (profilePhoto) {
+        photoPreviewEl.classList.remove('is-empty');
+        photoPreviewEl.style.backgroundImage = `url(${profilePhoto})`;
+        photoPreviewEl.style.backgroundSize = 'cover';
+        photoPreviewEl.style.backgroundPosition = 'center';
+        photoPreviewEl.textContent = '';
+        photoClearBtn?.classList.remove('hidden');
+      } else {
+        photoPreviewEl.classList.add('is-empty');
+        photoPreviewEl.style.backgroundImage = '';
+        const initial = (nameEl.value.trim() || '?').slice(0, 1).toUpperCase();
+        photoPreviewEl.textContent = initial;
+        photoClearBtn?.classList.add('hidden');
+      }
+    }
+
+    function compressImageFile(file) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+          reject(new Error('File non valido'));
+          return;
+        }
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const maxSide = 256;
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          if (!w || !h) {
+            reject(new Error('Immagine non leggibile'));
+            return;
+          }
+          const scale = Math.min(1, maxSide / Math.max(w, h));
+          w = Math.max(1, Math.round(w * scale));
+          h = Math.max(1, Math.round(h * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          let quality = 0.82;
+          let dataUrl = canvas.toDataURL('image/jpeg', quality);
+          while (dataUrl.length > 100000 && quality > 0.45) {
+            quality -= 0.12;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          if (dataUrl.length > 120000) {
+            reject(new Error('Foto troppo grande anche dopo compressione'));
+            return;
+          }
+          resolve(dataUrl);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Impossibile aprire la foto'));
+        };
+        img.src = url;
+      });
+    }
 
     function loadProfileFromStorage() {
       try {
         const raw = localStorage.getItem(PROFILE_KEY);
         if (!raw) return;
-        const p = M.normalizeProfile(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        const p = M.normalizeProfile(parsed);
         if (p.age != null) ageEl.value = String(p.age);
         if (p.sex) sexEl.value = p.sex;
         if (p.heightCm != null) heightEl.value = String(p.heightCm);
@@ -1089,7 +1225,11 @@
         if (p.maxHr != null) maxHrEl.value = String(p.maxHr);
         profileMeta.restingHrSource = p.restingHrSource;
         profileMeta.maxHrSource = p.maxHrSource;
+        if (Object.prototype.hasOwnProperty.call(parsed, 'photo')) {
+          profilePhoto = p.photo || null;
+        }
         updateHrHints();
+        renderPhotoPreview();
       } catch (_) {}
     }
 
@@ -1106,14 +1246,26 @@
         restingHr: val(restingHrEl),
         maxHr: val(maxHrEl),
         restingHrSource: profileMeta.restingHrSource,
-        maxHrSource: profileMeta.maxHrSource
+        maxHrSource: profileMeta.maxHrSource,
+        photo: profilePhoto
       });
     }
 
     function saveProfileToStorage(profile) {
       const p = M.normalizeProfile(profile || readProfileFromForm());
+      // Assicura che photo sia sempre presente nello storage (anche null).
+      if (!Object.prototype.hasOwnProperty.call(p, 'photo')) p.photo = profilePhoto;
+      profilePhoto = p.photo || null;
       localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+      renderPhotoPreview();
       return p;
+    }
+
+    /** Profilo per i tick BPM: senza foto per non saturare la rete. */
+    function liveProfilePayload() {
+      const p = currentProfile();
+      const { photo, ...rest } = p;
+      return rest;
     }
 
     function updateHrHints() {
@@ -1136,6 +1288,32 @@
     function currentProfile() {
       return saveProfileToStorage();
     }
+
+    photoPickBtn?.addEventListener('click', () => photoFileEl?.click());
+    photoClearBtn?.addEventListener('click', () => {
+      profilePhoto = null;
+      if (photoFileEl) photoFileEl.value = '';
+      saveProfileToStorage();
+      if (sessionActive || consentEl.checked) pushProfileToServer();
+      flashProfileNote('Foto rimossa.');
+    });
+    photoFileEl?.addEventListener('change', async () => {
+      const file = photoFileEl.files && photoFileEl.files[0];
+      if (!file) return;
+      try {
+        profilePhoto = await compressImageFile(file);
+        saveProfileToStorage();
+        if (sessionActive || consentEl.checked) pushProfileToServer();
+        flashProfileNote('Foto salvata — visibile in dashboard.');
+      } catch (err) {
+        flashProfileNote(err?.message || 'Impossibile usare questa foto.');
+      } finally {
+        photoFileEl.value = '';
+      }
+    });
+    nameEl.addEventListener('input', () => {
+      if (!profilePhoto) renderPhotoPreview();
+    });
 
     loadProfileFromStorage();
 
@@ -1425,7 +1603,6 @@
     }
 
     function payload() {
-      const profile = currentProfile();
       return {
         participantId,
         name: nameEl.value.trim() || 'Partecipante',
@@ -1435,7 +1612,7 @@
         deviceName: deviceName || undefined,
         quality: qualityFromAge(Date.now() - lastBpmAt),
         room,
-        profile,
+        profile: liveProfilePayload(),
         intensityPct: intensityPct(lastBpm)
       };
     }

@@ -88,18 +88,24 @@ Rigenera il certificato dopo cambio IP/rete:
 npm run certs:force
 ```
 
-### HTTPS in LAN (obbligatorio per Web Bluetooth)
+### Telefoni fuori dalla rete del PC (ngrok)
 
-1. PC coach e telefoni sulla **stessa Wi‑Fi** (o hotspot del PC).
+`avvia-servizi.bat` avvia i servizi e un tunnel **ngrok** verso `https://127.0.0.1:3033`. Il QR della dashboard usa l’URL pubblico (`https://….ngrok-free.dev`), quindi i telefoni non devono stare sulla stessa Wi‑Fi.
+
+Sul telefono, se compare la pagina di avviso di ngrok, tocca **Visit Site**. Poi, per il percorso BLE: iPhone in **Bluefy**, Android in **Chrome**.
+
+Il server legge l’URL da `http://127.0.0.1:4040`. Per un indirizzo fisso imposta `PUBLIC_URL` nel `.env`.
+
+### HTTPS in LAN (alternativa, stessa rete)
+
+1. PC coach e telefoni sulla **stessa Wi‑Fi**.
 2. Avvia `npm start` → HTTPS su `0.0.0.0:3033`.
-3. Sul telefono apri `https://<IP>:3033/participant.html` (o scansiona il QR sulla dashboard coach — il QR usa l’**IP LAN**, non `localhost`).
+3. Sul telefono apri `https://<IP>:3033/participant.html`. Senza ngrok il QR usa l’IP LAN.
 4. Accetta il certificato self-signed (avviso di sicurezza → Procedi / Avanzate).
 5. **iPhone:** apri il link **dentro Bluefy**, non in Safari.
 6. **Android:** apri in Chrome.
 
 Se il certificato non coincide più con l’IP (hai cambiato rete), `npm run certs:force` e riaccetta sul telefono.
-
-Se il coach apre la dashboard da `https://localhost:3033/`, il QR punta comunque all’IP Wi‑Fi del PC. Con più schede di rete, scegli l’IP giusto dal menu “Rete”.
 
 ---
 

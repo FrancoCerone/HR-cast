@@ -680,6 +680,26 @@
       gap: 0.4rem;
       margin-bottom: 0.25rem;
     }
+    .card-identity {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: clamp(0.35rem, 2cqw, 0.75rem);
+    }
+    .avatar {
+      flex-shrink: 0;
+      width: clamp(1.6rem, 14cqw, 4.25rem);
+      height: clamp(1.6rem, 14cqw, 4.25rem);
+      border-radius: 50%;
+      object-fit: cover;
+      background: rgba(0, 0, 0, 0.25);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      display: none;
+    }
+    .card.has-avatar .avatar {
+      display: block;
+    }
     .name {
       flex: 1 1 auto;
       min-width: 0;
@@ -1689,7 +1709,7 @@
 
   <main class="stage" id="sectionLive" aria-label="Live — partecipanti">
     <div class="grid is-empty" id="grid">
-      <div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR. Stessa rete Wi‑Fi (o hotspot del PC coach).</div>
+      <div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR e fallo scansionare dal telefono.</div>
     </div>
   </main>
 
@@ -2050,7 +2070,7 @@
       const samples = Array.isArray(p.samples) ? p.samples : [];
       const name = p.name || 'Partecipante';
       if (!samples.length) {
-        return { id: p.id, name, empty: true, samples: [] };
+        return { id: p.id, name, empty: true, samples: [], profile };
       }
 
       const bpms = samples.map((s) => Number(s.bpm)).filter((n) => Number.isFinite(n) && n > 0);
@@ -2847,6 +2867,7 @@
       if (!summary.empty) card.classList.add(`zone-${summary.dominant}`);
 
       setCardName(card, summary.name || '—');
+      setCardAvatar(card, summary.profile && summary.profile.photo);
       const pill = card.querySelector('.status-pill');
       pill.textContent = 'DONE';
       pill.className = 'status-pill done';
@@ -3287,6 +3308,28 @@
       if (changed) requestAnimationFrame(() => refreshNameScroll(nameEl));
     }
 
+    function setCardAvatar(card, photo) {
+      let img = card.querySelector('.avatar');
+      if (!img) {
+        const identity = card.querySelector('.card-identity');
+        const nameEl = card.querySelector('.name');
+        if (!identity || !nameEl) return;
+        img = document.createElement('img');
+        img.className = 'avatar';
+        img.alt = '';
+        img.decoding = 'async';
+        identity.insertBefore(img, nameEl);
+      }
+      const url = photo && typeof photo === 'string' ? photo : '';
+      if (url) {
+        if (img.getAttribute('src') !== url) img.src = url;
+        card.classList.add('has-avatar');
+      } else {
+        img.removeAttribute('src');
+        card.classList.remove('has-avatar');
+      }
+    }
+
     function refreshAllNameScrolls() {
       document.querySelectorAll('.card .name').forEach(refreshNameScroll);
     }
@@ -3294,7 +3337,10 @@
     function cardMarkup() {
       return `
         <div class="card-head">
-          <div class="name"><span class="name-text"></span></div>
+          <div class="card-identity">
+            <img class="avatar" alt="" decoding="async" />
+            <div class="name"><span class="name-text"></span></div>
+          </div>
           <div class="status-pill">OFFLINE</div>
         </div>
         <div class="live-body">
@@ -3733,7 +3779,9 @@
       const path = participantPath(info.room);
       const ips = info.ips || [];
       const host = location.hostname;
+      const publicUrl = String(info.publicUrl || '').replace(/\/$/, '');
 
+      if (publicUrl && !forcedIp) return `${publicUrl}${path}`;
       if (forcedIp) return buildLanUrl(info, forcedIp);
       if (!isLoopbackHost(host)) return `${location.origin}${path}`;
       if (ips.length) return buildLanUrl(info, ips[0]);
@@ -3745,8 +3793,11 @@
       joinUrlEl.textContent = url;
 
       const loopbackInUrl = /:\/\/(localhost|127\.0\.0\.1|\[::1\])[:/]/i.test(url);
-      if (loopbackInUrl) {
-        qrHint.textContent = 'Nessun IP LAN trovato. Collega il PC al Wi‑Fi (o hotspot) e ricarica.';
+      if (/ngrok/i.test(url)) {
+        qrHint.textContent = 'Link pubblico. Sul telefono, se compare l’avviso ngrok, tocca Visit Site.';
+        qrHint.classList.remove('hidden');
+      } else if (loopbackInUrl) {
+        qrHint.textContent = 'Nessun link pubblico. Avvia ngrok (avvia-servizi.bat) e ricarica.';
         qrHint.classList.remove('hidden');
       } else {
         qrHint.classList.add('hidden');
@@ -3761,7 +3812,7 @@
 
     function setupIpPicker(info) {
       const ips = info.ips || [];
-      if (ips.length <= 1) {
+      if (info.publicUrl || ips.length <= 1) {
         ipPick.classList.add('hidden');
         return;
       }
@@ -3808,6 +3859,7 @@
       if (state === 'offline') card.classList.add('offline');
 
       setCardName(card, s.name || '—');
+      setCardAvatar(card, s.profile && s.profile.photo);
 
       const pill = card.querySelector('.status-pill');
       if (state === 'live') {
@@ -3933,7 +3985,7 @@
       updateLiveStats(students);
 
       if (!students.length) {
-        grid.innerHTML = '<div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR. Stessa rete Wi‑Fi (o hotspot del PC coach).</div>';
+        grid.innerHTML = '<div class="empty">Live — in attesa dei partecipanti… Porta il mouse in basso per il QR e fallo scansionare dal telefono.</div>';
         cards.clear();
         lastBeatAt.clear();
         updateGridLayout(0);

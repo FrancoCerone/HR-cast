@@ -163,10 +163,20 @@ function broadcastRoster() {
 
 function upsertParticipant(id, name, room, profile) {
   const existing = participants.get(id);
-  const nextProfile =
-    profile != null
-      ? WocMetrics.normalizeProfile(profile)
-      : existing?.profile ?? null;
+  let nextProfile;
+  if (profile != null) {
+    nextProfile = WocMetrics.normalizeProfile(profile);
+    // BPM e payload leggeri spesso omettono `photo`: non cancellare quella già sul server.
+    if (
+      !Object.prototype.hasOwnProperty.call(profile, 'photo') &&
+      existing?.profile &&
+      existing.profile.photo
+    ) {
+      nextProfile.photo = existing.profile.photo;
+    }
+  } else {
+    nextProfile = existing?.profile ?? null;
+  }
   const entry = {
     id,
     name: String(name || existing?.name || 'Partecipante').trim().slice(0, 40) || 'Partecipante',
@@ -309,6 +319,60 @@ function publicBase(protocol, hostHint) {
   return `${protocol}://${host}:${PORT}`;
 }
 
+/** URL fisso da env, altrimenti il tunnel ngrok locale (agent API su 127.0.0.1:4040). */
+const NGROK_API = 'http://127.0.0.1:4040/api/tunnels';
+let ngrokCache = { at: 0, url: '' };
+let ngrokAnnounced = '';
+
+function envPublicUrl() {
+  return String(process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+}
+
+function rememberNgrokUrl(url) {
+  ngrokCache = { at: Date.now(), url };
+  if (url && url !== ngrokAnnounced) {
+    ngrokAnnounced = url;
+    console.log(`[ngrok] Partecipanti: ${url}/participant.html?room=${ROOM}`);
+  }
+  return url;
+}
+
+function ngrokPublicUrl() {
+  const fromEnv = envPublicUrl();
+  if (fromEnv) return Promise.resolve(fromEnv);
+  if (Date.now() - ngrokCache.at < 3000) return Promise.resolve(ngrokCache.url);
+  return new Promise((resolve) => {
+    const req = http.get(NGROK_API, { timeout: 800 }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        let url = '';
+        try {
+          const data = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          const tunnels = Array.isArray(data.tunnels) ? data.tunnels : [];
+          const httpsTunnels = tunnels.filter((t) => String(t.public_url || '').startsWith('https://'));
+          const mine = httpsTunnels.find((t) => String((t.config && t.config.addr) || '').includes(String(PORT)));
+          const pick = mine || httpsTunnels[0];
+          url = pick ? String(pick.public_url).replace(/\/+$/, '') : '';
+        } catch {
+          url = '';
+        }
+        resolve(rememberNgrokUrl(url));
+      });
+    });
+    req.on('error', () => resolve(rememberNgrokUrl('')));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(ngrokCache.url || '');
+    });
+  });
+}
+
+function participantJoinUrl(publicUrl, proto, ip) {
+  const base = publicUrl || publicBase(proto, ip);
+  return `${base}/participant.html?room=${encodeURIComponent(ROOM)}`;
+}
+
 // --- HTTP API ---
 
 app.get('/health', (_req, res) => {
@@ -327,18 +391,20 @@ app.get('/api/health', (_req, res) => {
   res.redirect(302, '/health');
 });
 
-app.get('/api/info', (req, res) => {
+app.get('/api/info', async (req, res) => {
   const proto = req.secure || USE_HTTPS ? 'https' : 'http';
   const ips = localIps();
-  const base = publicBase(proto, ips[0]);
+  const publicUrl = await ngrokPublicUrl();
+  const participantUrl = participantJoinUrl(publicUrl, proto, ips[0]);
   res.json({
     room: ROOM,
     port: PORT,
     https: USE_HTTPS,
     ips,
-    participantUrl: `${base}/participant.html?room=${encodeURIComponent(ROOM)}`,
-    studentUrl: `${base}/participant.html?room=${encodeURIComponent(ROOM)}`,
-    coachUrl: `${base}/`,
+    publicUrl: publicUrl || null,
+    participantUrl,
+    studentUrl: participantUrl,
+    coachUrl: publicUrl ? `${publicUrl}/` : `${publicBase(proto, ips[0])}/`,
     mode: 'hyperate-or-ble',
     architecture: 'watch-hyperate → server-ws | watch-ble → phone-webbluetooth → server',
     hyperate: {
@@ -356,10 +422,15 @@ app.get('/api/qr', async (req, res) => {
     const proto = USE_HTTPS ? 'https' : 'http';
     let target = typeof req.query.url === 'string' ? req.query.url.trim() : '';
     if (!target) {
-      const ip = typeof req.query.ip === 'string' && req.query.ip.trim()
-        ? req.query.ip.trim()
-        : ips[0] || 'localhost';
-      target = `${proto}://${ip}:${PORT}/participant.html?room=${encodeURIComponent(ROOM)}`;
+      const publicUrl = await ngrokPublicUrl();
+      if (publicUrl) {
+        target = participantJoinUrl(publicUrl, proto, ips[0]);
+      } else {
+        const ip = typeof req.query.ip === 'string' && req.query.ip.trim()
+          ? req.query.ip.trim()
+          : ips[0] || 'localhost';
+        target = participantJoinUrl('', proto, ip);
+      }
     }
     // Blocca data:/javascript: ecc.
     if (!/^https?:\/\//i.test(target)) {
@@ -902,10 +973,17 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('[Control] /api/control/workout/start|stop aperti (imposta CONTROL_API_KEY per proteggerli)');
   }
   if (USE_HTTPS) {
-    console.log('[TLS] Accetta il certificato self-signed sul telefono (una tantum).');
-    console.log('[TLS] HTTPS=false per HTTP solo su localhost (Web Bluetooth non funziona da IP LAN).');
+    console.log('[TLS] Via ngrok il telefono usa il certificato pubblico di ngrok.');
+    console.log('[TLS] Solo aprendo l’IP del PC in LAN compare il certificato self-signed.');
   }
   console.log('[Health] /health');
+  if (!envPublicUrl()) {
+    setInterval(() => {
+      ngrokPublicUrl().catch(() => {});
+    }, 5000);
+  } else {
+    console.log(`[ngrok] Partecipanti: ${envPublicUrl()}/participant.html?room=${ROOM}`);
+  }
 });
 
 function shutdown() {
