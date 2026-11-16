@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HRcast — il battito della sala</title>
-  <meta name="description" content="HRcast mette il battito di tutta la classe davanti al coach. L’allievo entra dal telefono con un QR e l’HypeRate ID dell’Apple Watch." />
+  <title>HRcast — allenamento condiviso</title>
+  <meta name="description" content="HRcast aggrega lo sforzo di chi si allena insieme. Dal telefono ognuno decide se pubblicare i propri dati nel gruppo o tenerli solo per sé." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e0e10'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='13' fill='%23f5d000'%3EHR%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -255,6 +255,32 @@
       gap: 0.6rem;
       padding: 0 0.9rem 0.9rem;
     }
+    .share {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-start;
+      margin: 0.15rem 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+    .share input {
+      width: 1.05rem;
+      min-height: 1.05rem;
+      margin-top: 0.15rem;
+      accent-color: var(--accent);
+    }
+    .private {
+      margin: 0 0.9rem 0.9rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .private strong { color: var(--text); }
     label { display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.25rem; }
     input, select {
       width: 100%;
@@ -398,6 +424,7 @@
     <nav class="nav-links" aria-label="Sezioni">
       <a href="#sala">Sala</a>
       <a href="#percorso">Percorso</a>
+      <a href="#privacy">Privacy</a>
       <a href="#sforzo">Sforzo</a>
       <a href="#prova">Prova</a>
     </nav>
@@ -408,8 +435,8 @@
     <div class="wrap hero">
       <div>
         <p class="kicker">In sala, in produzione</p>
-        <h1>Il battito di tutta la classe, su un muro solo.</h1>
-        <p class="lead">HRcast è la dashboard del coach. Ogni allievo entra dal telefono con un QR, scrive il proprio HypeRate ID, e l’Apple Watch manda il cuore al muro. Nessuna app da installare.</p>
+        <h1>Un allenamento condiviso.</h1>
+        <p class="lead">HRcast aggrega lo sforzo di chi sta facendo la stessa lezione. Il coach segue il gruppo: zone, intensità, come procede la sessione. Dal telefono ognuno decide se unire i propri dati a quell’allenamento, oppure tenerli solo per sé.</p>
         <div class="cta">
           <a class="btn btn-yellow" href="#sala">Apri la sala</a>
           <a class="btn btn-ghost" href="#percorso">Come entra un allievo</a>
@@ -427,7 +454,7 @@
         </div>
         <div class="grid" id="grid" aria-live="polite"></div>
         <div class="dock">
-          <span>In sala <b id="count">0</b></span>
+          <span>Nel gruppo <b id="count">0</b></span>
           <span>Media <b id="avg">—</b> BPM</span>
           <span>Intensità <b id="avgPct">—</b>%</span>
         </div>
@@ -444,15 +471,20 @@
             <label aria-hidden="true">&nbsp;</label>
             <button class="btn btn-yellow" type="submit" id="joinBtn">Sali in sella</button>
           </div>
+          <label class="share">
+            <input id="share" name="share" type="checkbox" />
+            <span>Pubblico il mio sforzo nel gruppo. Se non lo segno, nome e battito restano solo sul mio telefono e non entrano nella media.</span>
+          </label>
         </form>
+        <p class="private hidden" id="privateNote"></p>
       </div>
     </div>
 
     <section id="percorso">
       <div class="wrap">
         <p class="kicker">Il percorso vero</p>
-        <h2>Dal polso al muro, senza stare sulla stessa Wi‑Fi.</h2>
-        <p class="sub">In produzione il coach resta sul PC. I telefoni aprono un indirizzo pubblico, sempre lo stesso, e il battito arriva da HypeRate.</p>
+        <h2>Dal polso al gruppo, anche fuori dalla Wi‑Fi della sala.</h2>
+        <p class="sub">Il coach resta sul PC. I telefoni aprono un indirizzo pubblico, sempre lo stesso, e il battito arriva da HypeRate. Nel gruppo entra solo chi ha scelto di pubblicare.</p>
         <div class="steps">
           <article class="step">
             <em>01</em>
@@ -462,12 +494,37 @@
           <article class="step">
             <em>02</em>
             <h3>L’allievo entra dal telefono</h3>
-            <p>Scansiona, scrive nome e HypeRate ID dell’app sull’Apple Watch, dà il consenso ed entra in live.</p>
+            <p>Scansiona, scrive nome e HypeRate ID, poi sceglie se unire i propri numeri all’allenamento del gruppo.</p>
           </article>
           <article class="step">
             <em>03</em>
-            <h3>Il muro si accende</h3>
-            <p>Il server tiene un collegamento per persona. Zona, intensità e calorie si aggiornano insieme. La lezione si può registrare e riaprire.</p>
+            <h3>Il gruppo prende forma</h3>
+            <p>Zone, intensità e calorie si aggiornano insieme, solo per chi ha pubblicato. La lezione condivisa si può registrare e riaprire.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <div class="wrap">
+        <p class="kicker">Privacy</p>
+        <h2>Pubblici solo se lo decidi tu.</h2>
+        <p class="sub">Il rispetto sta nella scelta, non in un consenso nascosto. Allenarsi insieme non significa esporre i numeri di chi non vuole.</p>
+        <div class="steps">
+          <article class="step">
+            <em>01</em>
+            <h3>La scelta è sul telefono</h3>
+            <p>Prima di entrare nel gruppo segni se i tuoi dati si possono pubblicare. Senza quel sì, restano sul tuo schermo.</p>
+          </article>
+          <article class="step">
+            <em>02</em>
+            <h3>Puoi cambiare idea</h3>
+            <p>Pubblicare non è per sempre. Togli il segno e nome, battito e profilo escono dal gruppo.</p>
+          </article>
+          <article class="step">
+            <em>03</em>
+            <h3>Il gruppo usa solo chi c’è</h3>
+            <p>Medie, confronto e registrazione della lezione contano soltanto le persone che hanno scelto di partecipare.</p>
           </article>
         </div>
       </div>
@@ -551,7 +608,7 @@
 
   <footer>
     <div class="wrap">
-      HRcast · il muro del battito in sala.
+      HRcast · allenamento condiviso, dati solo se li pubblichi tu.
       <a href="https://github.com/FrancoCerone/HR-cast">Codice su GitHub</a>.
       Non è un dispositivo medico e non promette un’accuratezza clinica.
     </div>
@@ -583,6 +640,9 @@
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
     function zoneFromPct(pct) {
       if (pct < 70) return "blue";
       if (pct < 80) return "green";
@@ -613,10 +673,11 @@
 
     const grid = document.getElementById("grid");
     function renderWall(pulseId) {
+      const shared = riders.filter((r) => r.shared !== false);
       grid.innerHTML = "";
       let bpmSum = 0;
       let pctSum = 0;
-      for (const r of riders) {
+      for (const r of shared) {
         const bpm = bpmFromPct(r.pct, REST, MAX);
         bpmSum += bpm;
         pctSum += r.pct;
@@ -626,14 +687,25 @@
         const rate = kcalPerMin(bpm, 72, 34, "m");
         if (recording) kcal[r.id] = (kcal[r.id] || 0) + rate / 60;
         card.innerHTML =
-          '<div class="who"><span>' + r.name + (r.id === youId ? " · tu" : "") + '</span><span class="zone-name">' + ZONE_LABEL[zone] + '</span></div>' +
+          '<div class="who"><span>' + esc(r.name) + (r.id === youId ? " · tu" : "") + '</span><span class="zone-name">' + ZONE_LABEL[zone] + '</span></div>' +
           '<p class="bpm">' + bpm + "<small>BPM</small></p>" +
           '<div class="meta"><span>' + Math.round(r.pct) + '% intensità</span><span>' + (kcal[r.id] ? Math.round(kcal[r.id]) + " kcal" : rate.toFixed(1) + " kcal/min") + "</span></div>";
         grid.appendChild(card);
       }
-      document.getElementById("count").textContent = String(riders.length);
-      document.getElementById("avg").textContent = riders.length ? String(Math.round(bpmSum / riders.length)) : "—";
-      document.getElementById("avgPct").textContent = riders.length ? String(Math.round(pctSum / riders.length)) : "—";
+      document.getElementById("count").textContent = String(shared.length);
+      document.getElementById("avg").textContent = shared.length ? String(Math.round(bpmSum / shared.length)) : "—";
+      document.getElementById("avgPct").textContent = shared.length ? String(Math.round(pctSum / shared.length)) : "—";
+
+      const note = document.getElementById("privateNote");
+      const you = riders.find((r) => r.id === youId);
+      if (you && you.shared === false) {
+        const bpm = bpmFromPct(you.pct, REST, MAX);
+        note.classList.remove("hidden");
+        note.textContent = you.name + ", il tuo sforzo (" + bpm + " BPM) resta sul telefono. Non entra nella media del gruppo.";
+      } else {
+        note.classList.add("hidden");
+        note.textContent = "";
+      }
     }
 
     function tick() {
@@ -667,21 +739,33 @@
       }
     });
 
-    document.getElementById("joinForm").addEventListener("submit", (event) => {
-      event.preventDefault();
+    function applyYou() {
       const name = document.getElementById("riderName").value.trim();
-      if (!name) return;
+      if (!name) return false;
       const pct = Number(effort.value);
+      const shared = document.getElementById("share").checked;
       if (youId) {
         const you = riders.find((r) => r.id === youId);
         you.name = name;
         you.pct = pct;
+        you.shared = shared;
       } else {
         youId = "you";
-        riders.unshift({ id: youId, name, pct });
+        riders.unshift({ id: youId, name, pct, shared });
         document.getElementById("joinBtn").textContent = "Aggiorna";
       }
       renderWall(youId);
+      return true;
+    }
+
+    document.getElementById("share").addEventListener("change", () => {
+      if (!youId) return;
+      applyYou();
+    });
+
+    document.getElementById("joinForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      applyYou();
     });
 
     function points(series) {
