@@ -2,6 +2,8 @@
 
 Raccolta battito cardiaco in tempo reale per esperimenti in sala.
 
+Pagina pubblica: https://francocerone.github.io/HR-cast/
+
 **Uso sperimentale / ricerca — non per uso clinico. Non promette accuratezza medica.**
 
 ## Architettura

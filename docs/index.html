@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HRcast — il battito della sala</title>
+  <meta name="description" content="HRcast mette il battito di tutta la classe davanti al coach. L’allievo entra dal telefono con un QR e l’HypeRate ID dell’Apple Watch." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e0e10'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='13' fill='%23f5d000'%3EHR%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e0e10;
+      --surface: #1a1a1e;
+      --surface-2: #222228;
+      --text: #f2f2f4;
+      --muted: #a1a1aa;
+      --accent: #f5d000;
+      --ink: #0e0e10;
+      --line: rgba(255, 255, 255, 0.08);
+      --blue: #38bdf8;
+      --green: #4ade80;
+      --yellow: #facc15;
+      --red: #f87171;
+      --fill-blue: #0d3156;
+      --fill-green: #454b1e;
+      --fill-yellow: #5c4e14;
+      --fill-red: #43131f;
+      --fill-black: #2a1216;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "DM Sans", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse 70% 40% at 100% -10%, rgba(245, 208, 0, 0.09), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 0% 100%, rgba(56, 189, 248, 0.07), transparent 50%),
+        var(--bg);
+    }
+    a { color: inherit; }
+    img { max-width: 100%; }
+    .skip {
+      position: absolute;
+      left: 1rem;
+      top: -4rem;
+      background: var(--accent);
+      color: var(--ink);
+      padding: 0.5rem 0.8rem;
+      border-radius: 8px;
+      z-index: 20;
+    }
+    .skip:focus { top: 0.6rem; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 0.85rem 6vw;
+      background: rgba(14, 14, 16, 0.82);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .logo {
+      font-family: "Bebas Neue", Impact, sans-serif;
+      font-size: 1.7rem;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      line-height: 1;
+    }
+    .logo span { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 1.1rem;
+      margin-left: auto;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .nav-links a { text-decoration: none; color: var(--muted); }
+    .nav-links a:hover { color: var(--text); }
+    .nav-code {
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.45rem 0.8rem;
+    }
+    .nav-code:hover { border-color: var(--accent); color: var(--accent); }
+
+    .wrap { width: min(1120px, calc(100% - 10vw)); margin: 0 auto; }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 2.5rem;
+      align-items: end;
+      padding: 4.2rem 0 2.5rem;
+    }
+    .kicker {
+      margin: 0 0 0.8rem;
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-family: "Bebas Neue", Impact, sans-serif;
+      font-size: clamp(3.4rem, 7vw, 6.1rem);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      line-height: 0.88;
+    }
+    .lead {
+      margin: 1.2rem 0 0;
+      max-width: 38rem;
+      color: var(--muted);
+      font-size: 1.08rem;
+      line-height: 1.55;
+    }
+    .cta { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.6rem; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0.7rem 1.1rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn-yellow { background: var(--accent); color: var(--ink); }
+    .btn-yellow:hover { filter: brightness(1.05); }
+    .btn-ghost { background: transparent; color: var(--text); border-color: var(--line); }
+    .btn-ghost:hover { border-color: var(--text); }
+    .fine {
+      margin: 1rem 0 0;
+      color: #8b8b96;
+      font-size: 0.82rem;
+    }
+
+    .stage {
+      background: rgba(26, 26, 30, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .stage-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.75rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .live-pip {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6);
+      animation: pip 1.4s ease-out infinite;
+    }
+    .stage-bar strong { color: var(--text); font-weight: 700; }
+    .stage-bar .grow { margin-left: auto; }
+    .rec {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+    .rec.on { color: var(--red); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+      padding: 0.75rem;
+      min-height: 280px;
+    }
+    .card {
+      position: relative;
+      border-radius: 16px;
+      padding: 0.75rem 0.8rem 0.7rem;
+      min-height: 118px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+    .card.you { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .card .who {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .card .zone-name { color: rgba(255, 255, 255, 0.72); font-weight: 500; font-size: 0.68rem; }
+    .bpm {
+      margin: 0.25rem 0 0;
+      font-family: "Bebas Neue", Impact, sans-serif;
+      font-size: 2.7rem;
+      letter-spacing: 0.03em;
+      line-height: 0.9;
+    }
+    .bpm small { font-size: 0.9rem; letter-spacing: 0.08em; margin-left: 0.15rem; }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.78);
+    }
+    .card.beat .bpm { animation: beat 0.45s ease; }
+    .zone-blue { background: var(--fill-blue); }
+    .zone-green { background: var(--fill-green); }
+    .zone-yellow { background: var(--fill-yellow); }
+    .zone-red { background: var(--fill-red); }
+    .zone-black { background: var(--fill-black); }
+    .dock {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem 1.2rem;
+      padding: 0.7rem 0.9rem 0.85rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+    .dock b { color: var(--text); }
+
+    .join {
+      display: grid;
+      grid-template-columns: 1.1fr 1.4fr auto;
+      gap: 0.6rem;
+      padding: 0 0.9rem 0.9rem;
+    }
+    label { display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.25rem; }
+    input, select {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #121216;
+      color: var(--text);
+      font: inherit;
+      padding: 0.55rem 0.7rem;
+    }
+    input:focus, select:focus, button:focus-visible, a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    input[type="range"] { padding: 0; accent-color: var(--accent); }
+
+    section { padding: 3.2rem 0; }
+    h2 {
+      margin: 0 0 0.6rem;
+      font-family: "Bebas Neue", Impact, sans-serif;
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      line-height: 0.92;
+    }
+    .sub { margin: 0 0 1.4rem; max-width: 40rem; color: var(--muted); line-height: 1.5; }
+
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1.1rem 1.1rem 1.2rem;
+    }
+    .step em {
+      display: block;
+      font-style: normal;
+      font-family: "Bebas Neue", Impact, sans-serif;
+      font-size: 1.8rem;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+    .step h3 { margin: 0.2rem 0 0.4rem; font-size: 1.05rem; }
+    .step p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+
+    .split { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 1.4rem; align-items: center; }
+    .fei-num {
+      font-family: "Bebas Neue", Impact, sans-serif;
+      font-size: clamp(4.5rem, 8vw, 7rem);
+      line-height: 0.85;
+      letter-spacing: 0.02em;
+      margin: 0.2rem 0;
+    }
+    .fei-num.up { color: var(--green); }
+    .fei-num.down { color: var(--red); }
+    .fei-num.flat { color: var(--text); }
+    .weights { display: grid; gap: 0.45rem; margin-top: 1rem; }
+    .weight { display: grid; grid-template-columns: 7.2rem 1fr auto; gap: 0.5rem; align-items: center; font-size: 0.8rem; color: var(--muted); }
+    .bar { height: 8px; border-radius: 99px; background: #2a2a32; overflow: hidden; }
+    .bar span { display: block; height: 100%; background: var(--accent); }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1rem;
+    }
+    .legend { display: flex; gap: 1rem; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .swatch { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 99px; margin-right: 0.3rem; vertical-align: -1px; }
+    svg.chart { width: 100%; height: auto; display: block; }
+    .range-row { margin-top: 0.8rem; }
+
+    .calc {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 1.1rem;
+    }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+    .result {
+      border-radius: 16px;
+      padding: 1rem;
+      min-height: 220px;
+    }
+    .result .bpm { font-size: 4rem; }
+    .zones { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
+    .pill {
+      font-size: 0.72rem;
+      border-radius: 999px;
+      padding: 0.28rem 0.55rem;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .pill.on { color: var(--ink); border-color: transparent; font-weight: 700; }
+    .pill.blue.on { background: var(--blue); }
+    .pill.green.on { background: var(--green); }
+    .pill.yellow.on { background: var(--yellow); }
+    .pill.red.on { background: var(--red); color: #1a0a0e; }
+    .pill.black.on { background: #f4f4f5; color: #111; }
+
+    footer {
+      padding: 2rem 0 2.6rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--line);
+    }
+    footer a { color: var(--accent); }
+
+    @keyframes pip {
+      70% { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+    }
+    @keyframes beat {
+      0% { transform: scale(1); }
+      35% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .live-pip, .card.beat .bpm { animation: none; }
+    }
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero, .split, .steps, .calc, .join { grid-template-columns: 1fr; }
+      .hero { padding-top: 2.2rem; }
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .grid, .fields { grid-template-columns: 1fr; }
+      .nav { padding-inline: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#sala">Vai alla sala</a>
+  <header class="nav">
+    <a class="logo" href="#top">HR<span>CAST</span></a>
+    <nav class="nav-links" aria-label="Sezioni">
+      <a href="#sala">Sala</a>
+      <a href="#percorso">Percorso</a>
+      <a href="#sforzo">Sforzo</a>
+      <a href="#prova">Prova</a>
+    </nav>
+    <a class="nav-code" href="https://github.com/FrancoCerone/HR-cast">Codice</a>
+  </header>
+
+  <main id="top">
+    <div class="wrap hero">
+      <div>
+        <p class="kicker">In sala, in produzione</p>
+        <h1>Il battito di tutta la classe, su un muro solo.</h1>
+        <p class="lead">HRcast è la dashboard del coach. Ogni allievo entra dal telefono con un QR, scrive il proprio HypeRate ID, e l’Apple Watch manda il cuore al muro. Nessuna app da installare.</p>
+        <div class="cta">
+          <a class="btn btn-yellow" href="#sala">Apri la sala</a>
+          <a class="btn btn-ghost" href="#percorso">Come entra un allievo</a>
+        </div>
+        <p class="fine">Uso sperimentale, non clinico. La sala qui sotto è una simulazione delle stesse zone e delle stesse formule del prodotto vero.</p>
+      </div>
+
+      <div class="stage" id="sala">
+        <div class="stage-bar">
+          <span class="live-pip" aria-hidden="true"></span>
+          <strong>Live spinning</strong>
+          <span id="clock">00:00</span>
+          <span class="grow"></span>
+          <button type="button" class="rec" id="recBtn" aria-pressed="false">REC</button>
+        </div>
+        <div class="grid" id="grid" aria-live="polite"></div>
+        <div class="dock">
+          <span>In sala <b id="count">0</b></span>
+          <span>Media <b id="avg">—</b> BPM</span>
+          <span>Intensità <b id="avgPct">—</b>%</span>
+        </div>
+        <form class="join" id="joinForm">
+          <div>
+            <label for="riderName">Il tuo nome</label>
+            <input id="riderName" name="name" maxlength="24" placeholder="Es. Franco" autocomplete="name" required />
+          </div>
+          <div>
+            <label for="effort">Intensità <span id="effortLabel">78%</span></label>
+            <input id="effort" name="effort" type="range" min="45" max="100" value="78" />
+          </div>
+          <div>
+            <label aria-hidden="true">&nbsp;</label>
+            <button class="btn btn-yellow" type="submit" id="joinBtn">Sali in sella</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <section id="percorso">
+      <div class="wrap">
+        <p class="kicker">Il percorso vero</p>
+        <h2>Dal polso al muro, senza stare sulla stessa Wi‑Fi.</h2>
+        <p class="sub">In produzione il coach resta sul PC. I telefoni aprono un indirizzo pubblico, sempre lo stesso, e il battito arriva da HypeRate.</p>
+        <div class="steps">
+          <article class="step">
+            <em>01</em>
+            <h3>Il coach apre la sala</h3>
+            <p>La dashboard gira sul PC. In basso c’è il QR: punta al link pubblico della sessione, non all’indirizzo locale.</p>
+          </article>
+          <article class="step">
+            <em>02</em>
+            <h3>L’allievo entra dal telefono</h3>
+            <p>Scansiona, scrive nome e HypeRate ID dell’app sull’Apple Watch, dà il consenso ed entra in live.</p>
+          </article>
+          <article class="step">
+            <em>03</em>
+            <h3>Il muro si accende</h3>
+            <p>Il server tiene un collegamento per persona. Zona, intensità e calorie si aggiornano insieme. La lezione si può registrare e riaprire.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sforzo">
+      <div class="wrap split">
+        <div>
+          <p class="kicker">FrancoEffortIndex</p>
+          <h2>Questa lezione, contro quella già fatta.</h2>
+          <p class="sub">In sala il coach può riallenarsi confrontando lo sforzo con una lezione salvata. Il FEI è in punti: sopra zero stai spingendo di più, sotto zero stai restando indietro.</p>
+          <p class="fei-num flat" id="feiValue">0</p>
+          <p id="feiCaption">Allineato alla lezione di riferimento.</p>
+          <div class="weights" aria-label="Pesi del FrancoEffortIndex">
+            <div class="weight"><span>Intensità</span><div class="bar"><span style="width:55%"></span></div><b>55%</b></div>
+            <div class="weight"><span>Battito</span><div class="bar"><span style="width:25%"></span></div><b>25%</b></div>
+            <div class="weight"><span>Zona alta</span><div class="bar"><span style="width:12%"></span></div><b>12%</b></div>
+            <div class="weight"><span>Calorie</span><div class="bar"><span style="width:8%"></span></div><b>8%</b></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="legend">
+            <span><i class="swatch" style="background:#38bdf8"></i>Lezione salvata</span>
+            <span><i class="swatch" style="background:#f5d000"></i>Oggi</span>
+          </div>
+          <svg class="chart" viewBox="0 0 400 150" role="img" aria-labelledby="chartTitle">
+            <title id="chartTitle">Confronto di intensità tra la lezione di riferimento e quella di oggi</title>
+            <polyline id="lineRef" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+            <polyline id="lineNow" fill="none" stroke="#f5d000" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+          </svg>
+          <div class="range-row">
+            <label for="delta">Scarto di intensità rispetto alla lezione salvata: <span id="deltaLabel">0</span> punti</label>
+            <input id="delta" type="range" min="-18" max="18" value="0" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="prova">
+      <div class="wrap">
+        <p class="kicker">Le formule della sala</p>
+        <h2>Prova un battito, vedi la zona.</h2>
+        <p class="sub">Intensità con Karvonen, FC massima stimata con Tanaka, calorie al minuto con Keytel. Sono gli stessi conti che la dashboard fa su ogni allievo.</p>
+        <div class="calc">
+          <form class="fields" id="calcForm">
+            <div>
+              <label for="age">Età</label>
+              <input id="age" type="number" min="12" max="90" value="34" />
+            </div>
+            <div>
+              <label for="sex">Sesso</label>
+              <select id="sex">
+                <option value="m">Maschio</option>
+                <option value="f">Femmina</option>
+                <option value="x">Altro</option>
+              </select>
+            </div>
+            <div>
+              <label for="weight">Peso (kg)</label>
+              <input id="weight" type="number" min="30" max="200" value="72" />
+            </div>
+            <div>
+              <label for="rest">FC a riposo</label>
+              <input id="rest" type="number" min="35" max="110" value="60" />
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label for="bpmInput">Battito <span id="bpmLabel">150</span> BPM</label>
+              <input id="bpmInput" type="range" min="70" max="200" value="150" />
+            </div>
+          </form>
+          <div class="result zone-yellow" id="resultCard">
+            <div class="who"><span id="resultZone">Z3 · Soglia</span><span id="resultMax">FC max —</span></div>
+            <p class="bpm" id="resultBpm">150<small>BPM</small></p>
+            <div class="meta"><span id="resultPct">—% intensità</span><span id="resultKcal">— kcal/min</span></div>
+            <div class="zones" id="zonePills"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      HRcast · il muro del battito in sala.
+      <a href="https://github.com/FrancoCerone/HR-cast">Codice su GitHub</a>.
+      Non è un dispositivo medico e non promette un’accuratezza clinica.
+    </div>
+  </footer>
+
+  <script>
+    const REST = 60;
+    const MAX = 185;
+    const REF = [52, 55, 58, 62, 68, 72, 76, 80, 84, 88, 86, 78, 72, 80, 86, 91, 93, 88, 76, 70, 78, 84, 90, 92, 86, 74, 68, 76, 84, 89, 91, 84, 76, 70, 64, 58, 54, 50];
+    const ZONE_LABEL = {
+      blue: "Z1 · Riposo",
+      green: "Z2 · Aerobico",
+      yellow: "Z3 · Soglia",
+      red: "Z4 · Alto",
+      black: "Z5 · Max"
+    };
+
+    const riders = [
+      { id: "g", name: "Giulia", pct: 78 },
+      { id: "m", name: "Marco", pct: 86 },
+      { id: "s", name: "Sara", pct: 64 },
+      { id: "l", name: "Luca", pct: 92 },
+      { id: "e", name: "Elena", pct: 71 }
+    ];
+    let youId = null;
+    let recording = false;
+    let elapsed = 0;
+    let kcal = Object.create(null);
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
+    function zoneFromPct(pct) {
+      if (pct < 70) return "blue";
+      if (pct < 80) return "green";
+      if (pct < 90) return "yellow";
+      if (pct <= 96) return "red";
+      return "black";
+    }
+    function bpmFromPct(pct, rest, max) {
+      return Math.round(rest + (pct / 100) * (max - rest));
+    }
+    function intensityPct(bpm, rest, max) {
+      const span = max - rest;
+      if (span <= 20) return clamp(Math.round((bpm / max) * 100), 0, 100);
+      return clamp(Math.round(((bpm - rest) / span) * 100), 0, 100);
+    }
+    function tanaka(age) { return Math.round(208 - 0.7 * age); }
+    function kcalPerMin(bpm, weight, age, sex) {
+      let kcalMin;
+      if (sex === "f") kcalMin = (-20.4022 + 0.4472 * bpm - 0.1263 * weight + 0.074 * age) / 4.184;
+      else if (sex === "m") kcalMin = (-55.0969 + 0.6309 * bpm + 0.1988 * weight + 0.2017 * age) / 4.184;
+      else {
+        const m = (-55.0969 + 0.6309 * bpm + 0.1988 * weight + 0.2017 * age) / 4.184;
+        const f = (-20.4022 + 0.4472 * bpm - 0.1263 * weight + 0.074 * age) / 4.184;
+        kcalMin = (m + f) / 2;
+      }
+      return Math.max(0, kcalMin);
+    }
+
+    const grid = document.getElementById("grid");
+    function renderWall(pulseId) {
+      grid.innerHTML = "";
+      let bpmSum = 0;
+      let pctSum = 0;
+      for (const r of riders) {
+        const bpm = bpmFromPct(r.pct, REST, MAX);
+        bpmSum += bpm;
+        pctSum += r.pct;
+        const zone = zoneFromPct(r.pct);
+        const card = document.createElement("article");
+        card.className = "card zone-" + zone + (r.id === youId ? " you" : "") + (r.id === pulseId ? " beat" : "");
+        const rate = kcalPerMin(bpm, 72, 34, "m");
+        if (recording) kcal[r.id] = (kcal[r.id] || 0) + rate / 60;
+        card.innerHTML =
+          '<div class="who"><span>' + r.name + (r.id === youId ? " · tu" : "") + '</span><span class="zone-name">' + ZONE_LABEL[zone] + '</span></div>' +
+          '<p class="bpm">' + bpm + "<small>BPM</small></p>" +
+          '<div class="meta"><span>' + Math.round(r.pct) + '% intensità</span><span>' + (kcal[r.id] ? Math.round(kcal[r.id]) + " kcal" : rate.toFixed(1) + " kcal/min") + "</span></div>";
+        grid.appendChild(card);
+      }
+      document.getElementById("count").textContent = String(riders.length);
+      document.getElementById("avg").textContent = riders.length ? String(Math.round(bpmSum / riders.length)) : "—";
+      document.getElementById("avgPct").textContent = riders.length ? String(Math.round(pctSum / riders.length)) : "—";
+    }
+
+    function tick() {
+      const moved = reduceMotion ? null : riders[Math.floor(Math.random() * riders.length)];
+      if (moved && moved.id !== youId) {
+        moved.pct = clamp(moved.pct + (Math.random() < 0.5 ? -2 : 2), 48, 99);
+      }
+      if (recording) elapsed += 1;
+      const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
+      const s = String(elapsed % 60).padStart(2, "0");
+      document.getElementById("clock").textContent = m + ":" + s;
+      renderWall(moved && moved.id);
+    }
+
+    document.getElementById("recBtn").addEventListener("click", () => {
+      recording = !recording;
+      const btn = document.getElementById("recBtn");
+      btn.classList.toggle("on", recording);
+      btn.setAttribute("aria-pressed", recording ? "true" : "false");
+      btn.textContent = recording ? "REC ●" : "REC";
+    });
+
+    const effort = document.getElementById("effort");
+    effort.addEventListener("input", () => {
+      document.getElementById("effortLabel").textContent = effort.value + "%";
+      if (!youId) return;
+      const you = riders.find((r) => r.id === youId);
+      if (you) {
+        you.pct = Number(effort.value);
+        renderWall(youId);
+      }
+    });
+
+    document.getElementById("joinForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const name = document.getElementById("riderName").value.trim();
+      if (!name) return;
+      const pct = Number(effort.value);
+      if (youId) {
+        const you = riders.find((r) => r.id === youId);
+        you.name = name;
+        you.pct = pct;
+      } else {
+        youId = "you";
+        riders.unshift({ id: youId, name, pct });
+        document.getElementById("joinBtn").textContent = "Aggiorna";
+      }
+      renderWall(youId);
+    });
+
+    function points(series) {
+      return series.map((v, i) => {
+        const x = (i / (series.length - 1)) * 392 + 4;
+        const y = 140 - ((v - 40) / 60) * 124;
+        return x.toFixed(1) + "," + y.toFixed(1);
+      }).join(" ");
+    }
+
+    function paintFei() {
+      const delta = Number(document.getElementById("delta").value);
+      document.getElementById("deltaLabel").textContent = (delta > 0 ? "+" : "") + delta;
+      const now = REF.map((v) => clamp(v + delta, 40, 100));
+      document.getElementById("lineRef").setAttribute("points", points(REF));
+      document.getElementById("lineNow").setAttribute("points", points(now));
+
+      const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+      const intPp = mean(now) - mean(REF);
+      const bpmNow = mean(now.map((p) => bpmFromPct(p, REST, MAX)));
+      const bpmRef = mean(REF.map((p) => bpmFromPct(p, REST, MAX)));
+      const bpmPp = clamp(((bpmNow - bpmRef) / bpmRef) * 100, -40, 40);
+      const high = (arr) => arr.filter((v) => v >= 80).length / arr.length;
+      const zonePp = (high(now) - high(REF)) * 100;
+      const profileBpm = (arr) => mean(arr.map((p) => kcalPerMin(bpmFromPct(p, REST, MAX), 72, 34, "m")));
+      const rateNow = profileBpm(now);
+      const rateRef = profileBpm(REF);
+      const kcalPp = clamp(((rateNow - rateRef) / Math.max(rateRef, 0.5)) * 100, -30, 30);
+      const fei = (0.55 * intPp + 0.25 * bpmPp + 0.12 * zonePp + 0.08 * kcalPp) / 1;
+      const rounded = Math.round(fei * 10) / 10;
+      const el = document.getElementById("feiValue");
+      el.textContent = (rounded > 0 ? "+" : "") + rounded.toFixed(1);
+      el.className = "fei-num " + (rounded > 0.4 ? "up" : rounded < -0.4 ? "down" : "flat");
+      document.getElementById("feiCaption").textContent = rounded > 0.4
+        ? "Oggi stai spingendo di più della lezione salvata."
+        : rounded < -0.4
+          ? "Oggi stai restando sotto la lezione salvata."
+          : "Allineato alla lezione di riferimento.";
+    }
+    document.getElementById("delta").addEventListener("input", paintFei);
+
+    const pills = document.getElementById("zonePills");
+    for (const key of ["blue", "green", "yellow", "red", "black"]) {
+      const el = document.createElement("span");
+      el.className = "pill " + key;
+      el.dataset.zone = key;
+      el.textContent = ZONE_LABEL[key];
+      pills.appendChild(el);
+    }
+
+    function paintCalc() {
+      const age = clamp(Number(document.getElementById("age").value) || 34, 12, 90);
+      const sex = document.getElementById("sex").value;
+      const weight = clamp(Number(document.getElementById("weight").value) || 72, 30, 200);
+      const rest = clamp(Number(document.getElementById("rest").value) || 60, 35, 110);
+      const bpm = Number(document.getElementById("bpmInput").value);
+      const max = tanaka(age);
+      const pct = intensityPct(bpm, rest, max);
+      const zone = zoneFromPct(pct);
+      const kcal = kcalPerMin(bpm, weight, age, sex);
+      document.getElementById("bpmLabel").textContent = String(bpm);
+      document.getElementById("resultBpm").innerHTML = bpm + "<small>BPM</small>";
+      document.getElementById("resultZone").textContent = ZONE_LABEL[zone];
+      document.getElementById("resultMax").textContent = "FC max " + max;
+      document.getElementById("resultPct").textContent = pct + "% intensità";
+      document.getElementById("resultKcal").textContent = kcal.toFixed(1) + " kcal/min";
+      const card = document.getElementById("resultCard");
+      card.className = "result zone-" + zone;
+      for (const el of pills.children) el.classList.toggle("on", el.dataset.zone === zone);
+    }
+    document.getElementById("calcForm").addEventListener("input", paintCalc);
+
+    renderWall(null);
+    paintFei();
+    paintCalc();
+    setInterval(tick, reduceMotion ? 4000 : 1400);
+  </script>
+</body>
+</html>
